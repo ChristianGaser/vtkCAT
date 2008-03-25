@@ -1,0 +1,26 @@
+PROJECT_NAME	       = CAT
+PROJECT_NUMBER         = 1.00
+
+OUTPUT_DIRECTORY       = ./doc
+
+OUTPUT_LANGUAGE        = English
+
+EXTRACT_ALL            = YES
+
+EXTRACT_PRIVATE	       = NO
+
+HIDE_UNDOC_MEMBERS     = NO
+
+HIDE_UNDOC_CLASSES     = NO
+
+CLASS_DIAGRAMS         = YES
+
+RECURSIVE              = YES
+
+FILE_PATTERNS          = *.h *.cxx
+
+GENERATE_LATEX         = YES
+
+GENERATE_MAN           = YES
+
+
