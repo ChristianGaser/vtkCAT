@@ -258,12 +258,17 @@ void vtkScalarBarWidgetCAT::OnMouseMove()
   double *fpos1 = this->ScalarBarActor->GetPositionCoordinate()->GetValue();
   double *fpos2 = this->ScalarBarActor->GetPosition2Coordinate()->GetValue();
   
+  double rdiff = range[1] - range[0];
+  
   // check whether the left or right part of the scalebar is selected 
-  if (XF < (fpos1[0] + fpos2[0]/2.0)) {
-    range[0] -= range[0]*(XF - this->StartPosition[0])/fpos2[0]*2.0;
-  } else {
-    range[1] += range[1]*(XF - this->StartPosition[0])/fpos2[0]*2.0;
-  }
+  if (XF < (fpos1[0] + fpos2[0]/2.0))
+    range[0] += rdiff*(XF - this->StartPosition[0])/fpos2[0]*2.0;
+  else 
+    range[1] += rdiff*(XF - this->StartPosition[0])/fpos2[0]*2.0;
+
+  // ensure that range[0] is always smaller than range[1]
+  if (range[0] >= range[1])
+    range[0] = range[1] - 1e-3;
 
   scalarBar->SetTableRange(range);
   scalarBar->SetHueRange( 0.667, 0.0 );
