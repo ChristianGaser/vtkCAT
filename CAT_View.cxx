@@ -7,13 +7,8 @@
 #include "vtkDoubleArray.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkActor.h"
-#include "vtkProperty.h"
-#include "vtkInteractorStyleTrackballCamera.h"
 #include "vtkPolyDataReader.h"
 #include "vtkCommand.h"
-#include "vtkBICOBJReader.h"
-#include "vtkFreesurferReader.h"
-#include "vtkScalarBarWidget.h"
 #include "vtkScalarBarActor.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
@@ -21,8 +16,11 @@
 #include "vtkPNGWriter.h"
 #include "vtkWindowToImageFilter.h"
 #include <vtksys/SystemTools.hxx>
-#include "vtkInteractorStyleCAT.h"
+#include "vtkErrorCode.h"
 
+#include "vtkInteractorStyleCAT.h"
+#include "vtkSurfaceReader.h"
+#include "vtkScalarBarWidgetCAT.h"
 
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
@@ -40,8 +38,6 @@ int main( int argc, char **argv )
     exit( 1 );
   }
 
-  int inputLength = -1;
-  int polyFormat = -1;
   char *scalarFileName = NULL;
   char *outputFileName = NULL;
   int colorbar = defaultColorbar;
@@ -105,41 +101,18 @@ int main( int argc, char **argv )
   
   char *inputFileName = argv[indx];
 
-  vtkPolyDataReader *polyDataReader = NULL;
+  vtkSurfaceReader *polyDataReader = vtkSurfaceReader::New();
   vtkRenderer *renderer = vtkRenderer::New();
   vtkPolyDataMapper *polyDataMapper = vtkPolyDataMapper::New();
   vtkLookupTable *lookupTable = vtkLookupTable::New();
   vtkActor *actor = vtkActor::New();
-  vtkScalarBarWidget *scalarBarWidget = vtkScalarBarWidget::New();
-  vtkInteractorStyleCAT *interactorStyleTrackballCamera = vtkInteractorStyleCAT::New();
-
+  vtkScalarBarWidgetCAT *scalarBarWidget = vtkScalarBarWidgetCAT::New();
+  vtkInteractorStyleCAT *interactorStyleCAT = vtkInteractorStyleCAT::New();
   vtkRenderWindowInteractor *renderWindowInteractor =  vtkRenderWindowInteractor::New();
   vtkRenderWindow *renderWindow = vtkRenderWindow::New();
 
   renderer->SetBackground( 0.0, 0.0, 0.0 );
-
-  cerr << "read " << inputFileName << endl;
-
-  inputLength = strlen( inputFileName );
     
-  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(inputFileName).c_str(),".vtk")) 
-    polyFormat = 0;
-  
-  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(inputFileName).c_str(),".obj")) 
-    polyFormat = 1;
-
-  switch(polyFormat) {
-    case -1:
-      polyDataReader = vtkFreesurferReader::New();
-      break;      
-    case  0:
-      polyDataReader = vtkPolyDataReader::New();
-      break;      
-    case  1:
-      polyDataReader = vtkBICOBJReader::New();
-      break;      
-  }
-  
   polyDataReader->SetFileName( inputFileName );
   polyDataReader->Update();
     
@@ -158,16 +131,14 @@ int main( int argc, char **argv )
   renderWindow->SetSize( 600, 600 );
 
   renderWindowInteractor->SetRenderWindow( renderWindow );
-  renderWindowInteractor->SetInteractorStyle( interactorStyleTrackballCamera );
+  renderWindowInteractor->SetInteractorStyle( interactorStyleCAT );
   renderWindowInteractor->Initialize();
 
   // read scalars if defined
   if (scalar == 1) {
     cout << "Read scalars: " << scalarFileName << endl; 
     vtkDoubleArray *scalars = NULL;
-    if(polyFormat == -1)
-      scalars = readFreesurferScalars(scalarFileName);
-    else
+//      scalars = readFreesurferScalars(scalarFileName);
       scalars = readScalars(scalarFileName);
     polyDataReader->GetOutput()->GetPointData()->SetScalars(scalars);
   }
@@ -178,29 +149,32 @@ int main( int argc, char **argv )
   lookupTable->SetHueRange( 0.667, 0.0 );
   lookupTable->SetSaturationRange( 1, 1 );
   lookupTable->SetValueRange( 1, 1 );
+  lookupTable->Build();
 
   // plot colorbar only if scalar vector data is defined
   if (polyDataReader->GetOutput()->GetPointData()->GetScalars()) {
     if (polyDataReader->GetOutput()->GetPointData()->GetScalars()->GetNumberOfComponents() == 1) {
-      // if scalarRange is not defined use range form reader
+      // if scalarRange is not defined use range from reader
       polyDataMapper->SetScalarRange( scalarRange );
       polyDataMapper->SetLookupTable( lookupTable );
       if (colorbar == 1) {
         scalarBarWidget->SetInteractor(renderWindowInteractor);
-        if (scalar == 1)
-          scalarBarWidget->GetScalarBarActor()->SetTitle(scalarFileName);
         scalarBarWidget->GetScalarBarActor()->SetLookupTable(polyDataMapper->GetLookupTable());
         scalarBarWidget->GetScalarBarActor()->SetOrientationToHorizontal();
         scalarBarWidget->GetScalarBarActor()->SetWidth(0.4);
         scalarBarWidget->GetScalarBarActor()->SetHeight(0.075);
         scalarBarWidget->GetScalarBarActor()->SetPosition(0.3, 0.05);
-        scalarBarWidget->EnabledOn();
+        if (scalar == 1)
+          scalarBarWidget->GetScalarBarActor()->SetTitle(scalarFileName);
+        scalarBarWidget->SetEnabled(1);
+        renderer->AddActor( scalarBarWidget->GetScalarBarActor() );
       }
     }
   }
 
-
   renderWindow->Render();
+
+  renderWindow->SetWindowName(inputFileName);
 
   // save png-file if defined
   if (png == 1) {
@@ -225,7 +199,7 @@ int main( int argc, char **argv )
   polyDataMapper->Delete();
   renderer->Delete();
   renderWindow->Delete();
-  interactorStyleTrackballCamera->Delete();
+  interactorStyleCAT->Delete();
   renderWindowInteractor->Delete();
   scalarBarWidget->Delete();
 
@@ -242,51 +216,41 @@ vtkDoubleArray* readScalars(char* filename)
   }
 
   vtkDoubleArray* scalars = vtkDoubleArray::New();
+  vtkFreesurferReader *FreesurferReader = vtkFreesurferReader::New();
   
+  int i, magic, nValues, fNum, valsPerVertex;
   double x;
   const int LINE_SIZE = 10240;
   char line[LINE_SIZE];
   
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    if (sscanf(line, "%lf", &x) != 1) {
-      cerr << "Error reading value from line " << line << " from file " << filename << endl;
-      fclose(fp);
-      return NULL;
-    }
-    scalars->InsertNextValue(x);
-  }
-   
-  fclose(fp);
-  return scalars;
-}
-
-vtkDoubleArray* readFreesurferScalars(char* filename)
-{
-  
-  FILE* fp = fopen(filename, "rb");
-  if (fp == NULL) {
-    cerr << "Unable to open " << filename << endl;
-    return NULL;
-  }
-
-  vtkDoubleArray* scalars = vtkDoubleArray::New();
-  vtkFreesurferReader *FreesurferReader = vtkFreesurferReader::New();
-  
-  double x;
-  int i, magic, nValues, fNum, valsPerVertex;
-  
   magic = FreesurferReader->Fread3(fp);
+  
+  // freesurfer scalars
+  if (magic==16777215)
+  {
+  
+    nValues = FreesurferReader->FreadInt(fp);
+    fNum = FreesurferReader->FreadInt(fp);
+    valsPerVertex = FreesurferReader->FreadInt(fp);
 
-  nValues = FreesurferReader->FreadInt(fp);
-  fNum = FreesurferReader->FreadInt(fp);
-  valsPerVertex = FreesurferReader->FreadInt(fp);
-
-  for (i = 0; i < nValues; i++) {
-    x = FreesurferReader->FreadFloat(fp);
-    scalars->InsertNextValue(x);
+    for (i = 0; i < nValues; i++) {
+      x = FreesurferReader->FreadFloat(fp);
+      scalars->InsertNextValue(x);
+    }
   }
-
-   
+  // BIC scalars as ascii file
+  else
+  {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      if (sscanf(line, "%lf", &x) != 1) {
+        cerr << "Error reading value from line " << line << " from file " << filename << endl;
+        fclose(fp);
+        return NULL;
+      }
+      scalars->InsertNextValue(x);
+    }
+  }
+  
   fclose(fp);
   return scalars;
 }
@@ -320,8 +284,20 @@ usage(const char* const prog)
   << "  -output output.png  " << endl
   << "     Save png-file." << endl
   << endl
+  << "KEYBOARD INTERACTIONS" << endl
+  << "  u d l r" << endl
+  << "     rotate up/down/left/right by 45 degree." << endl
+  << "  U D L R" << endl
+  << "     rotate up/down/left/right by 1 degree." << endl
+  << "  w " << endl
+  << "     Show wireframe." << endl
+  << "  s " << endl
+  << "     Show shaded." << endl
+  << "  q e" << endl
+  << "     Quit." << endl
+  << endl
   << "REQUIRED PARAMETERS" << endl
-  << "    <inputFiducial.vtk> " << endl
+  << "    <input.vtk> " << endl
   << "" << endl
   << "EXAMPLE" << endl
   << "    " << prog << " -range -1 1 -scalar scalarInput.txt input.vtk" << endl

@@ -12,37 +12,59 @@
      PURPOSE.  See the above copyright notice for more information.
 
 =========================================================================*/
-// .NAME vtkSurfaceReader - read various surface files
+// .NAME vtkSurfaceReader - read ascii BIC .obj and freesurfer files
 // .SECTION Description
-// vtkSurfaceReader is a source object that reads surface
-// files. The output of this source object is polygonal data.
+// vtkSurfaceReader is a source object that reads BIC .obj and freesurfer
+// files. The output of this source object is PolyDataReader.
 // .SECTION See Also
-// vtkOBJImporter
+// vtkFreesurferReader vtkBICOBJReader
 
 #ifndef __vtkSurfaceReader_h
 #define __vtkSurfaceReader_h
 
-#include "vtkPolyDataReader.h"
+#include "vtkBICOBJReader.h"
+#include "vtkFreesurferReader.h"
+#include "vtkDataReader.h"
 
-class VTK_IO_EXPORT vtkSurfaceReader : public vtkPolyDataReader 
+class vtkPolyData;
+
+class VTK_IO_EXPORT vtkSurfaceReader : public vtkDataReader 
 {
 public:
   static vtkSurfaceReader *New();
-  vtkTypeRevisionMacro(vtkSurfaceReader,vtkPolyDataReader);
+  vtkTypeRevisionMacro(vtkSurfaceReader,vtkDataReader);
   void PrintSelf(ostream& os, vtkIndent indent);
+  
+  enum SURFACE_TYPE {
+    SURFACE_TYPE_FREESURFER  = 0,
+    SURFACE_TYPE_BICOBJ      = 1,    
+    SURFACE_TYPE_VTKPOLYDATA = 2
+  };
 
-  // Description:
-  // Specify file name of Surface file.
+  vtkPolyData *GetOutput();
+  vtkPolyData *GetOutput(int idx);
+  void SetOutput(vtkPolyData *output);
+
+  virtual int GetSurfaceType(void);
+
   vtkSetStringMacro(FileName);
   vtkGetStringMacro(FileName);
+
+  unsigned int CanReadFile(char* fn);
+
+  void ReadBICOBJ(char* filename);
+  void ReadVTK(char* filename);
+  void ReadFreesurfer(char* filename);
 
 protected:
   vtkSurfaceReader();
   ~vtkSurfaceReader();
   
-  int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+  virtual int RequestData(vtkInformation *, vtkInformationVector **,
+                          vtkInformationVector *);
 
-  char *FileName;
+  virtual int FillOutputPortInformation(int, vtkInformation*);
+
 private:
   vtkSurfaceReader(const vtkSurfaceReader&);  // Not implemented.
   void operator=(const vtkSurfaceReader&);  // Not implemented.

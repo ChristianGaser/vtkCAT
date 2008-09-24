@@ -71,7 +71,6 @@ void vtkInteractorStyleCAT::OnChar()
       if (this->Interactor->GetShiftKey()) camera->Elevation(-1.0);
       else camera->Elevation(-45.0);
       camera->OrthogonalizeViewUp();
-
       rwi->Render();
       break;
       }

@@ -15,118 +15,234 @@
 #include "vtkSurfaceReader.h"
 
 #include "vtkCellArray.h"
+#include "vtkFieldData.h"
 #include "vtkFloatArray.h"
 #include "vtkInformation.h"
 #include "vtkInformationVector.h"
 #include "vtkObjectFactory.h"
 #include "vtkPointData.h"
 #include "vtkPolyData.h"
-#include "vtkByteSwap.h"
-#include "vtkUnsignedCharArray.h"
 #include <vtksys/SystemTools.hxx>
-#include "vtkPolyDataReader.h"
-#include "vtkBICOBJReader.h"
-#include "vtkFreesurferReader.h"
+#include <vtkErrorCode.h>
+#include "vtkExecutive.h"
 
 vtkCxxRevisionMacro(vtkSurfaceReader, "$Revision: 1.00 $");
 vtkStandardNewMacro(vtkSurfaceReader);
 
 // Description:
-// Instantiate object with NULL filename.
+// Instantiate object with NULL this->FileName.
 vtkSurfaceReader::vtkSurfaceReader()
 {
+  vtkPolyData *output = vtkPolyData::New();
+  this->SetOutput(output);
   this->FileName = NULL;
-  this->SetNumberOfInputPorts(0);
+  output->SetMaximumNumberOfPieces(1);
+  output->ReleaseData();
+  output->Delete();
 }
 
 vtkSurfaceReader::~vtkSurfaceReader()
 {
-  if (this->FileName)
-    {
-    delete [] this->FileName;
-    this->FileName = NULL;
-    }
 }
+
+vtkPolyData *vtkSurfaceReader::GetOutput()
+{
+  return this->GetOutput(0);
+}
+
+vtkPolyData *vtkSurfaceReader::GetOutput(int port)
+{
+  return vtkPolyData::SafeDownCast(this->GetOutputDataObject(port));
+}
+
+void vtkSurfaceReader::SetOutput(vtkPolyData *output)
+{
+  this->GetExecutive()->SetOutputData(0, output);
+}
+
+int vtkSurfaceReader::GetSurfaceType()
+{
+  int surfaceType = 0;
+  
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".obj")) 
+      surfaceType = 1;
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".vtk")) 
+      surfaceType = 2;
+  return(surfaceType);
+}
+
+void vtkSurfaceReader::ReadBICOBJ(char* filename)
+{
+
+  vtkBICOBJReader* reader = vtkBICOBJReader::New();
+  reader->SetFileName (filename);
+  
+  try
+  {
+    reader->Update();
+    this->SetFileName(reader->GetFileName());
+    this->SetOutput(reader->GetOutput());
+    this->GetOutput()->SetMaximumNumberOfPieces(1);
+  }
+  catch (vtkErrorCode::ErrorIds error)
+  {
+    reader->Delete();
+    throw error;
+  }
+  reader->Delete();
+}
+
+void vtkSurfaceReader::ReadVTK(char* filename)
+{
+  vtkPolyDataReader* reader = vtkPolyDataReader::New();
+  reader->SetFileName (filename);
+  
+  try
+  {
+    reader->Update();
+    this->SetFileName(reader->GetFileName());
+    this->SetOutput(reader->GetOutput());
+    this->GetOutput()->SetMaximumNumberOfPieces(1);
+  }
+  catch (vtkErrorCode::ErrorIds error)
+  {
+    reader->Delete();
+    throw error;
+  }
+  reader->Delete();
+}
+
+
+void vtkSurfaceReader::ReadFreesurfer(char* filename)
+{
+
+  vtkFreesurferReader* reader = vtkFreesurferReader::New();
+  reader->SetFileName (filename);
+  
+  try
+  {
+    reader->Update();
+    this->SetFileName(reader->GetFileName());
+    this->SetOutput(reader->GetOutput());
+    this->GetOutput()->SetMaximumNumberOfPieces(1);
+  }
+  catch (vtkErrorCode::ErrorIds error)
+  {
+    reader->Delete();
+    throw error;
+  }
+  reader->Delete();
+}
+
+unsigned int vtkSurfaceReader::CanReadFile (char* filename)
+{
+
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(filename).c_str(),".obj")) 
+  {
+    vtkBICOBJReader* reader = vtkBICOBJReader::New();
+    reader->SetFileName (filename);
+    try
+    {
+      reader->Update();
+    }
+    catch(vtkErrorCode::ErrorIds)
+    {
+      reader->Delete();
+      return 0;
+    }
+    reader->Delete();
+    return vtkSurfaceReader::SURFACE_TYPE_BICOBJ;
+  }
+  
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(filename).c_str(),".vtk")) 
+  {
+    try
+    {
+      vtkPolyDataReader* reader = vtkPolyDataReader::New();
+      reader->SetFileName (filename);
+      if (reader->IsFilePolyData ())
+      {
+        reader->Delete();
+        return vtkSurfaceReader::SURFACE_TYPE_VTKPOLYDATA;
+      }
+      reader->Delete();
+    }
+    catch (vtkErrorCode::ErrorIds)
+    {
+    }
+  }
+
+  vtkFreesurferReader* reader = vtkFreesurferReader::New();
+  reader->SetFileName (filename);
+  try
+  {
+    reader->Update();
+  }
+  catch(vtkErrorCode::ErrorIds)
+  {
+    reader->Delete();
+    return 0;
+  }
+  reader->Delete();
+  return vtkSurfaceReader::SURFACE_TYPE_FREESURFER;
+
+}
+
 
 int vtkSurfaceReader::RequestData(
   vtkInformation *vtkNotUsed(request),
   vtkInformationVector **vtkNotUsed(inputVector),
   vtkInformationVector *outputVector)
 {
-  // get the info object
   vtkInformation *outInfo = outputVector->GetInformationObject(0);
-
-  // get the ouptut
+  
   vtkPolyData *output = vtkPolyData::SafeDownCast(
     outInfo->Get(vtkDataObject::DATA_OBJECT()));
-
+    
+  output->SetMaximumNumberOfPieces(1);
+  
   if (!this->FileName) 
     {
     vtkErrorMacro(<< "A FileName must be specified.");
     return 1;
     }
+
+  vtkDebugMacro(<<"Reading vtk polygonal data...");
+
+  try
+  {
     
-  vtkDebugMacro(<<"Reading file");
-
-  // intialise some structures to store the file contents in
-  vtkPoints *points = vtkPoints::New(); 
-  vtkFloatArray *normals = vtkFloatArray::New();
-  vtkCellArray *polys = vtkCellArray::New();
-  vtkUnsignedCharArray *scalars = vtkUnsignedCharArray::New();
-
-  char line[1024], Id;
-  float xyz[3];
-  float s, r, g, b, a;
-  int nPoly, nPoint, colorId, i, index, magic;
-  FILE *fp;
-          
-  if((fp = fopen(this->FileName, "rb")) == 0) {
-    fprintf(stderr, "input_freesurfer: Couldn't open file %s.\n", this->FileName);
-    return(0);
+    std::cout << "Reading : " << this->FileName <<"... ";
+    switch (vtkSurfaceReader::CanReadFile(this->FileName))
+    {
+	case vtkSurfaceReader::SURFACE_TYPE_FREESURFER :
+	  vtkSurfaceReader::ReadFreesurfer(this->FileName);
+	  break;
+	case vtkSurfaceReader::SURFACE_TYPE_BICOBJ :
+	  vtkSurfaceReader::ReadBICOBJ(this->FileName);
+	  break;
+	case vtkSurfaceReader::SURFACE_TYPE_VTKPOLYDATA :
+	  vtkSurfaceReader::ReadVTK(this->FileName);
+	  break;
+	default :
+	  vtkErrorMacro(<<"unknown dataset type : "<<this->FileName<<endl);
+	  throw vtkErrorCode::UnrecognizedFileTypeError;
+    }
+    std::cout << "done." << std::endl;
+    
   }
+  catch (vtkErrorCode::ErrorIds error)
+  {
+    throw error; 
+  }  
+}
 
-  // read magic number for checking filetype
-  magic = Fread3(fp);
-
-  if( magic == QUAD_FILE_MAGIC_NUMBER) {
-    fprintf(stderr, "QUAD_FILE_MAGIC_NUMBER not yet prepared %s.\n");
-    return(0);
-  } else if( magic == TRIANGLE_FILE_MAGIC_NUMBER) {
-    fgets(line, 1024, fp);
-    fscanf(fp, "\n") ;
-    /* read # of vertices and faces */
-    nPoint = FreadInt(fp);
-    nPoly  = FreadInt(fp);
-
-	// read points
-	for (i=0; i<nPoint; ++i) {
-		xyz[0] = FreadFloat(fp);
-		xyz[1] = FreadFloat(fp);
-		xyz[2] = FreadFloat(fp);
-		points->InsertNextPoint(xyz);
-	}
-
-	// read indices
-	for (i=0; i<nPoly; ++i) {
-		polys->InsertNextCell(3);
-		for (int j=0; j<3; ++j) {
-			index = FreadInt(fp);
-			polys->InsertCellPoint(index);
-		}
-	}
-
-    fclose(fp);
-
-	output->SetPoints(points);
-	output->SetPolys(polys);
-
-  }
-  
-  points->Delete();
-  polys->Delete();
-
+int vtkSurfaceReader::FillOutputPortInformation(int, vtkInformation *info)
+{
+  info->Set(vtkPolyData::DATA_TYPE_NAME(), "vtkPolyData");
   return 1;
 }
+
 
 void vtkSurfaceReader::PrintSelf(ostream& os, vtkIndent indent)
 {
