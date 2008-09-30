@@ -468,8 +468,8 @@ void vtkViewImage2D::UpdatePosition ()
 
   this->GetCurrentPoint(pos);
 
-  double* spacing = this->GetImage()->GetSpacing();
-  double* origin  = this->GetImage()->GetOrigin();
+  double *spacing = this->GetImage()->GetSpacing();
+  double *origin  = this->GetImage()->GetOrigin();
   double *imBounds = this->GetImage()->GetBounds();
 
   // check if pos lies inside image bounds
@@ -1091,7 +1091,11 @@ vtkActor* vtkViewImage2D::AddDataSet (vtkDataSet* dataset,  vtkProperty* propert
        }
        
     */
-    
+      
+  int *extent  = this->ImageReslice->GetOutput()->GetExtent();  
+  double *origin  = this->ImageReslice->GetOutput()->GetOrigin();
+  double *spacing = this->ImageReslice->GetOutput()->GetSpacing();
+  
     if (doit)
     {
       

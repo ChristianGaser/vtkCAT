@@ -207,12 +207,9 @@ int vtkSurfaceReader::RequestData(
     return 1;
     }
 
-  vtkDebugMacro(<<"Reading vtk polygonal data...");
-
   try
   {
     
-    std::cout << "Reading : " << this->FileName <<"... ";
     switch (vtkSurfaceReader::CanReadFile(this->FileName))
     {
 	case vtkSurfaceReader::SURFACE_TYPE_FREESURFER :
@@ -228,7 +225,6 @@ int vtkSurfaceReader::RequestData(
 	  vtkErrorMacro(<<"unknown dataset type : "<<this->FileName<<endl);
 	  throw vtkErrorCode::UnrecognizedFileTypeError;
     }
-    std::cout << "done." << std::endl;
     
   }
   catch (vtkErrorCode::ErrorIds error)

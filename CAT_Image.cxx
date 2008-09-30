@@ -42,8 +42,7 @@ int main (int argc, char* argv[])
   reader->SetFileName (imageFileName);
   reader->GetOutput()->Update();
 
-  int extent[6];
-  reader->GetOutput()->GetWholeExtent(extent);
+  int *extent = reader->GetOutput()->GetWholeExtent();
 
   // read up to 3 surfaces
   vtkSurfaceReader *polyDataReader  = vtkSurfaceReader::New();
@@ -56,28 +55,32 @@ int main (int argc, char* argv[])
 
   if (argc>2) 
   {
-    polyDataReader->SetFileName( argv[2] );
+    polyDataReader->SetFileName(argv[2]);
     polyDataReader->Update();
     polyData = polyDataReader->GetOutput();
     polyData->Update();
+    cout << "\033[22;31m" << argv[2] << std::endl;
   }
 
   if (argc>3) 
   {
-    polyDataReader2->SetFileName( argv[3] );
+    polyDataReader2->SetFileName(argv[3]);
     polyDataReader2->Update();
     polyData2 = polyDataReader2->GetOutput();
     polyData2->Update();
+    cout << "\033[22;32m" << argv[3] << std::endl;
   }
 
   if (argc>4) 
   {
-    polyDataReader3->SetFileName( argv[4] );
+    polyDataReader3->SetFileName(argv[4]);
     polyDataReader3->Update();
     polyData3 = polyDataReader3->GetOutput();
     polyData3->Update();
+    cout << "\033[22;34m" << argv[4] << std::endl;
   }
 
+  
   /**
      Create 3 views, each of them will have a different orientation, .i.e.
      axial, sagittal and coronal.
@@ -104,25 +107,25 @@ int main (int argc, char* argv[])
   renderWindow3->AddRenderer (renderer3);
 
   // windowsize
-  renderWindow1->SetSize( ws, ws );
-  renderWindow2->SetSize( ws, ws );
-  renderWindow3->SetSize( ws, ws );
+  renderWindow1->SetSize(ws, ws);
+  renderWindow2->SetSize(ws, ws);
+  renderWindow3->SetSize(ws, ws);
 
-  renderWindow1->SetPosition (0, 50+ws);
-  renderWindow2->SetPosition (0, 50);
+  renderWindow1->SetPosition (0,  60+ws);
+  renderWindow2->SetPosition (0,  50);
   renderWindow3->SetPosition (ws, 50);
     
   renderWindowInteractor1->SetRenderWindow (renderWindow1);
   renderWindowInteractor2->SetRenderWindow (renderWindow2);
   renderWindowInteractor3->SetRenderWindow (renderWindow3);
 
-  view1->SetRenderWindow ( renderWindow1 );
-  view2->SetRenderWindow ( renderWindow2 );
-  view3->SetRenderWindow ( renderWindow3 );
+  view1->SetRenderWindow (renderWindow1);
+  view2->SetRenderWindow (renderWindow2);
+  view3->SetRenderWindow (renderWindow3);
 
-  view1->SetRenderer ( renderer1 );
-  view2->SetRenderer ( renderer2 );
-  view3->SetRenderer ( renderer3 );
+  view1->SetRenderer (renderer1);
+  view2->SetRenderer (renderer2);
+  view3->SetRenderer (renderer3);
 
   /**
      Set some properties to the views, like the interaction style, orientation and
@@ -226,6 +229,10 @@ int main (int argc, char* argv[])
   renderWindow1->Render();
   renderWindow2->Render();
   renderWindow3->Render();
+
+  renderWindow1->SetWindowName(imageFileName);
+  renderWindow2->SetWindowName(imageFileName);
+  renderWindow3->SetWindowName(imageFileName);
 
   renderWindowInteractor1->Start();
   renderWindowInteractor2->Start();
