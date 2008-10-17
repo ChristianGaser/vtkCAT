@@ -16,20 +16,39 @@
 
 static void usage(const char* const prog);
 
+static int defaultWindowSize = 400;
+
 int main (int argc, char* argv[])
 {
 
   int polyFormat  = -1;
   int imageFormat = -1;
-  int ws = 400;
   
-  if (argc < 2)
-  {
-    usage(argv[0]);
-    exit (-1);
+  int windowSize = defaultWindowSize;
+
+  int indx = -1;
+  for (int j = 1; j < argc; j++) {
+   if (argv[j][0] != '-') {
+    indx = j;
+    break;
+   }
+   else if (strcmp(argv[j], "-size") == 0) {
+    j++; windowSize = atof(argv[j]);
+   }
+   else {
+    cout << endl;
+    cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
+    cout << endl;
+    exit(1);
+   }
+  }
+  if (indx < 0) {
+   usage(argv[0]);
+   exit(1);
   }
 
-  const char *imageFileName = argv[1];
+  const char *imageFileName = argv[indx];
+  const int numArgs = argc - indx;
 
   // Analyze is not yet working
   if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(imageFileName).c_str(),".hdr")) 
@@ -53,33 +72,35 @@ int main (int argc, char* argv[])
   vtkPolyData *polyData2 = vtkPolyData::New();
   vtkPolyData *polyData3 = vtkPolyData::New();
 
-  if (argc>2) 
+  if (numArgs>1) 
   {
-    polyDataReader->SetFileName(argv[2]);
+    polyDataReader->SetFileName(argv[indx+1]);
     polyDataReader->Update();
     polyData = polyDataReader->GetOutput();
     polyData->Update();
-    cout << "\033[22;31m" << argv[2] << std::endl;
+    cout << "\033[22;31m" << argv[indx+1] << std::endl;
   }
 
-  if (argc>3) 
+  if (numArgs>2) 
   {
-    polyDataReader2->SetFileName(argv[3]);
+    polyDataReader2->SetFileName(argv[indx+2]);
     polyDataReader2->Update();
     polyData2 = polyDataReader2->GetOutput();
     polyData2->Update();
-    cout << "\033[22;32m" << argv[3] << std::endl;
+    cout << "\033[22;32m" << argv[indx+2] << std::endl;
   }
 
-  if (argc>4) 
+  if (numArgs>3) 
   {
-    polyDataReader3->SetFileName(argv[4]);
+    polyDataReader3->SetFileName(argv[indx+3]);
     polyDataReader3->Update();
     polyData3 = polyDataReader3->GetOutput();
     polyData3->Update();
-    cout << "\033[22;34m" << argv[4] << std::endl;
+    cout << "\033[22;34m" << argv[indx+3] << std::endl;
   }
 
+  /* reset colored text */
+  cout << "\033[0m";
   
   /**
      Create 3 views, each of them will have a different orientation, .i.e.
@@ -107,13 +128,13 @@ int main (int argc, char* argv[])
   renderWindow3->AddRenderer (renderer3);
 
   // windowsize
-  renderWindow1->SetSize(ws, ws);
-  renderWindow2->SetSize(ws, ws);
-  renderWindow3->SetSize(ws, ws);
+  renderWindow1->SetSize(windowSize, windowSize);
+  renderWindow2->SetSize(windowSize, windowSize);
+  renderWindow3->SetSize(windowSize, windowSize);
 
-  renderWindow1->SetPosition (0,  60+ws);
-  renderWindow2->SetPosition (0,  50);
-  renderWindow3->SetPosition (ws, 50);
+  renderWindow1->SetPosition (0, 60+windowSize);
+  renderWindow2->SetPosition (0, 50);
+  renderWindow3->SetPosition (windowSize, 50);
     
   renderWindowInteractor1->SetRenderWindow (renderWindow1);
   renderWindowInteractor2->SetRenderWindow (renderWindow2);
@@ -191,7 +212,7 @@ int main (int argc, char* argv[])
   vtkProperty* prop2 = vtkProperty::New();
   vtkProperty* prop3 = vtkProperty::New();
 
-  if (argc>2) 
+  if (numArgs>1) 
   {
     prop->SetColor (1,0,0);
     view1->AddDataSet(polyData, prop);
@@ -199,7 +220,7 @@ int main (int argc, char* argv[])
     view3->AddDataSet(polyData, prop);
   }
 
-  if (argc>3) 
+  if (numArgs>2) 
   {
     prop2->SetColor (0,1,0);
     view1->AddDataSet(polyData2, prop2);
@@ -207,7 +228,7 @@ int main (int argc, char* argv[])
     view3->AddDataSet(polyData2, prop2);
   }
 
-  if (argc>4) 
+  if (numArgs>3) 
   {
     prop3->SetColor (0,0,1);
     view1->AddDataSet(polyData3, prop3);
@@ -284,6 +305,11 @@ usage(const char* const prog)
   << "" << endl
   << "DESCRIPTION" << endl
   << "    This program will display the <input.mnc> image." << endl
+  << endl
+  << "OPTIONS" << endl
+  << "  -size WindowSize  " << endl
+  << "     Size of window." << endl
+  << "     Default value: " << defaultWindowSize << endl
   << endl
   << "REQUIRED PARAMETERS" << endl
   << "    <input.mnc> " << endl

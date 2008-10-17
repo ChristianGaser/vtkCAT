@@ -138,11 +138,10 @@ int main( int argc, char **argv )
   if (scalar == 1) {
     cout << "Read scalars: " << scalarFileName << endl; 
     vtkDoubleArray *scalars = NULL;
-//      scalars = readFreesurferScalars(scalarFileName);
-      scalars = readScalars(scalarFileName);
+    scalars = readScalars(scalarFileName);
     polyDataReader->GetOutput()->GetPointData()->SetScalars(scalars);
   }
-  
+
   if (scalarRange[1] < scalarRange[0])
     polyDataReader->GetOutput()->GetScalarRange( scalarRange );
   lookupTable->SetTableRange( scalarRange );
@@ -293,6 +292,8 @@ usage(const char* const prog)
   << "     Show wireframe." << endl
   << "  s " << endl
   << "     Show shaded." << endl
+  << "  g " << endl
+  << "     Grab image to file render.png." << endl
   << "  q e" << endl
   << "     Quit." << endl
   << endl

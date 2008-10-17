@@ -25,6 +25,8 @@
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkRenderer.h"
+#include "vtkWindowToImageFilter.h"
+#include "vtkPNGWriter.h"
 
 vtkCxxRevisionMacro(vtkInteractorStyleCAT, "$Revision: 1.00 $");
 vtkStandardNewMacro(vtkInteractorStyleCAT);
@@ -90,6 +92,20 @@ void vtkInteractorStyleCAT::OnChar()
       else camera->Azimuth(-45.0);
       camera->OrthogonalizeViewUp();
       rwi->Render();
+      break;
+      }
+    case 'g' :    case 'G' :
+      {
+	vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
+	windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+                                                	
+	vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
+	PNGWriter->SetInput( windowToImageFilter->GetOutput() );
+	PNGWriter->SetFileName( "render.png" );
+	windowToImageFilter->Update();
+	PNGWriter->Write();
+	PNGWriter->Delete();
+	windowToImageFilter->Delete();
       break;
       }
     }

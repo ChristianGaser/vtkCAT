@@ -16,9 +16,6 @@ SET(vtkCAT_VERSION "${vtkCAT_VERSION_MAJOR}.${vtkCAT_VERSION_MINOR}.${vtkCAT_VER
 #SUBDIRS(vtkRenderingAddOn)
 
 SET(vtkCAT_SRCS
-    lib/vtkMINCImageAttributes.cxx
-    lib/vtkMINCImageReader.cxx
-    lib/vtkMINCImageWriter.cxx
     lib/vtkCaretTgtSmoothPolyDataFilter.cxx
     lib/vtkEllipsoidProjectPolyDataFilter.cxx
     lib/vtkPolyDataCurvature.cxx
@@ -33,6 +30,8 @@ SET(vtkCAT_SRCS
     lib/vtkInflateSmoothPolyData.cxx
     lib/vtkInteractorStyleCAT.cxx
     lib/vtkScalarBarWidgetCAT.cxx
+    lib/vtkMINCImageReader.cxx
+    lib/vtkMINCImageAttributes.cxx
 )
 
 SET(vtkRenderingAddOn_SRCS
