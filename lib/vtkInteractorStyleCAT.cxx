@@ -31,6 +31,8 @@
 vtkCxxRevisionMacro(vtkInteractorStyleCAT, "$Revision: 1.00 $");
 vtkStandardNewMacro(vtkInteractorStyleCAT);
 
+static void usage();
+
 //----------------------------------------------------------------------------
 vtkInteractorStyleCAT::vtkInteractorStyleCAT() 
 {
@@ -94,18 +96,24 @@ void vtkInteractorStyleCAT::OnChar()
       rwi->Render();
       break;
       }
+    case 'h' :    case 'H' :
+      {
+      usage();
+      break;
+      }
     case 'g' :    case 'G' :
       {
-	vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
-	windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+  	  vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
+	  windowToImageFilter->SetInput( rwi->GetRenderWindow() );
                                                 	
-	vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
-	PNGWriter->SetInput( windowToImageFilter->GetOutput() );
-	PNGWriter->SetFileName( "render.png" );
-	windowToImageFilter->Update();
-	PNGWriter->Write();
-	PNGWriter->Delete();
-	windowToImageFilter->Delete();
+	  vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
+	  PNGWriter->SetInput( windowToImageFilter->GetOutput() );
+	  PNGWriter->SetFileName( "render.png" );
+	  windowToImageFilter->Update();
+	  PNGWriter->Write();
+	  PNGWriter->Delete();
+	  windowToImageFilter->Delete();
+	  cout << "Save render.png" << endl;
       break;
       }
     }
@@ -117,4 +125,26 @@ void vtkInteractorStyleCAT::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 
+}
+
+//----------------------------------------------------------------------------
+static void
+usage()
+{
+  cout << endl
+  << "KEYBOARD INTERACTIONS" << endl
+  << "  u d l r" << endl
+  << "     Rotate up/down/left/right by 45 degree." << endl
+  << "  U D L R" << endl
+  << "     Rotate up/down/left/right by 1 degree." << endl
+  << "  w " << endl
+  << "     Show wireframe." << endl
+  << "  s " << endl
+  << "     Show shaded." << endl
+  << "  g " << endl
+  << "     Grab image to file render.png." << endl
+  << "  q e" << endl
+  << "     Quit." << endl
+  << endl
+  << endl;
 }

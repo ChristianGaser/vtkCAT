@@ -29,6 +29,7 @@ vtkDoubleArray* readFreesurferScalars(char* filename);
 static double defaultScalarRange[2] = { 0, -1 };
 static int defaultColorbar = 0;
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
+static int defaultWindowSize[2] = { 600, 600 };
 
 int main( int argc, char **argv )
 {
@@ -43,13 +44,9 @@ int main( int argc, char **argv )
   int colorbar = defaultColorbar;
   int scalar = 0;
   int png = 0;
-  double scalarRange[2];
-  scalarRange[0] = defaultScalarRange[0];
-  scalarRange[1] = defaultScalarRange[1];
-  double rotate[3];
-  rotate[0] = defaultRotate[0];
-  rotate[1] = defaultRotate[1];
-  rotate[2] = defaultRotate[2];
+  double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
+  int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
+  double rotate[3] = {defaultRotate[0], defaultRotate[1], defaultRotate[2]};
 
   int indx = -1;
   for (int j = 1; j < argc; j++) {
@@ -60,6 +57,10 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-range") == 0) {
     j++; scalarRange[0] = atof(argv[j]);
     j++; scalarRange[1] = atof(argv[j]);
+   }
+   else if (strcmp(argv[j], "-size") == 0) {
+    j++; WindowSize[0] = atoi(argv[j]);
+    j++; WindowSize[1] = atoi(argv[j]);
    }
    else if (strcmp(argv[j], "-colorbar") == 0) {
     colorbar = 1;
@@ -128,7 +129,7 @@ int main( int argc, char **argv )
   renderer->AddActor( actor );
 
   renderWindow->AddRenderer( renderer );
-  renderWindow->SetSize( 600, 600 );
+  renderWindow->SetSize( WindowSize[0], WindowSize[1] );
 
   renderWindowInteractor->SetRenderWindow( renderWindow );
   renderWindowInteractor->SetInteractorStyle( interactorStyleCAT );
@@ -268,11 +269,14 @@ usage(const char* const prog)
   << "    This program will render the <input.vtk> surface." << endl
   << endl
   << "OPTIONS" << endl
+  << "  -size xsize ysize  " << endl
+  << "     Window size." << endl
+  << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
   << "  -range lower upper  " << endl
   << "     Range of scalar values." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
   << "  -scalar scalarInput.txt  " << endl
-  << "     Ascii file with scalar values." << endl
+  << "     File with scalar values (either ascii or Freesurfer format)." << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
   << "  -left  " << endl
@@ -285,9 +289,9 @@ usage(const char* const prog)
   << endl
   << "KEYBOARD INTERACTIONS" << endl
   << "  u d l r" << endl
-  << "     rotate up/down/left/right by 45 degree." << endl
+  << "     Rotate up/down/left/right by 45 degree." << endl
   << "  U D L R" << endl
-  << "     rotate up/down/left/right by 1 degree." << endl
+  << "     Rotate up/down/left/right by 1 degree." << endl
   << "  w " << endl
   << "     Show wireframe." << endl
   << "  s " << endl
