@@ -46,8 +46,6 @@ SET(vtkCAT_SRCS
     vtkCAT/vtkPolyDataDistortion.cxx
     vtkCAT/vtkUtilities.cxx
     vtkCAT/vtkPointTopologyHelper.cxx
-    vtkCAT/vtkAnalyzeRawReader.cxx
-    vtkCAT/vtkAnalyzeImageReader.cxx
     vtkCAT/vtkBICOBJReader.cxx
     vtkCAT/vtkSurfaceReader.cxx
     vtkCAT/vtkFreesurferReader.cxx
@@ -170,7 +168,7 @@ IF (USE_VTK_FILE)
 ENDIF (USE_VTK_FILE)
 
 #-----------------------------------------------------------------------------
-# doxygen (and other?) documentation
+# doxygen documentation
 
 FIND_PACKAGE(Doxygen)
 IF (DOXYGEN)
