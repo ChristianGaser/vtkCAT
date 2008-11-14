@@ -1,3 +1,0 @@
-#!/bin/sh
-
-/Applications/CAT_View.app/Contents/MacOS/CAT_View $@
