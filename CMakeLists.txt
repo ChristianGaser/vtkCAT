@@ -16,30 +16,28 @@ SET(vtkCAT_VERSION_BUILD 0)
 SET(vtkCAT_VERSION "${vtkCAT_VERSION_MAJOR}.${vtkCAT_VERSION_MINOR}.${vtkCAT_VERSION_BUILD}")
 
 #--------------
-# vtkINRIA3D
+# ITK
 #--------------
-SET(vtkINRIA3D_DIR /usr/local/lib)
-
-OPTION(USE_INIRIA3D "If ON, Compile vtkInria3D extensions" OFF)
-IF(USE_INIRIA3D)
-  FIND_PACKAGE(vtkINRIA3D)
-  IF(vtkINRIA3D_FOUND)
-    FIND_PACKAGE(ITK REQUIRED)
-    IF(ITK_FOUND)
-      INCLUDE(${ITK_USE_FILE})		
-    ELSE(ITK_FOUND)
-      MESSAGE(FATAL_ERROR "ITK not found. Please set ITK_DIR.")
-    ENDIF(ITK_FOUND)
-
-	INCLUDE(${vtkINRIA3D_USE_FILE})		
-    SET(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}    -DvtkCAT_USE_INIRIA3D")
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -DvtkCAT_USE_INIRIA3D")
-  ELSE(vtkINRIA3D_FOUND)
-	MESSAGE(FATAL_ERROR "vtkINRIA3D not found. Please set vtkINRIA3D_DIR.")
-  ENDIF(vtkINRIA3D_FOUND)
-ELSE(USE_INIRIA3D)
-  SET(vtkINRIA3D_FOUND OFF)
-ENDIF(USE_INIRIA3D)
+OPTION(USE_ITK "If ON, Compile ITK extensions" ON)
+IF(USE_ITK)
+  FIND_PACKAGE(ITK)
+  IF(ITK_FOUND)
+   INCLUDE(${ITK_USE_FILE})		
+    SET(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}    -DvtkCAT_USE_ITK")
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -DvtkCAT_USE_ITK")
+  ELSE(ITK_FOUND)
+	MESSAGE(FATAL_ERROR "ITK not found. Please set ITK_DIR.")
+  ENDIF(ITK_FOUND)
+  
+  IF( ITK_BUILD_SHARED )
+    SET( ITK_LIBS_STYLE "SHARED" )
+  ELSE( ITK_BUILD_SHARED )
+    SET( ITK_LIBS_STYLE "STATIC" )
+  ENDIF( ITK_BUILD_SHARED )
+	
+ELSE(USE_ITK)
+  SET(ITK_FOUND OFF)
+ENDIF(USE_ITK)
 
 SET(vtkCAT_SRCS
     vtkCAT/vtkCaretTgtSmoothPolyDataFilter.cxx
@@ -58,6 +56,8 @@ SET(vtkCAT_SRCS
     vtkCAT/vtkScalarBarWidgetCAT.cxx
     vtkCAT/vtkMINCImageReader.cxx
     vtkCAT/vtkMINCImageAttributes.cxx
+	vtkCAT/vtkMetaImageData.cxx
+	vtkCAT/vtkMetaDataSet.cxx
 )
 
 SET(vtkRenderingAddOn_SRCS
@@ -86,6 +86,9 @@ ADD_DEFINITIONS(-DUSE_NAMESPACE_STD)
 
 INCLUDE (${CMAKE_ROOT}/Modules/FindVTK.cmake)
 
+#--------------
+# VTK
+#--------------
 FIND_PACKAGE(VTK REQUIRED)
 IF (USE_VTK_FILE)
   INCLUDE (${USE_VTK_FILE})
@@ -113,8 +116,7 @@ IF (USE_VTK_FILE)
 	vtkRenderingAddOn
   )
 
-  SET(vtkInria3D_LIBS
-    vtkDataManagement
+  SET(ITK_LIBS
 	itkAddOn
 	${ITK_LIBRARIES}
 	ITKIO
@@ -124,11 +126,11 @@ IF (USE_VTK_FILE)
   ADD_LIBRARY(vtkCAT STATIC ${vtkCAT_SRCS})
   ADD_LIBRARY(vtkRenderingAddOn STATIC ${vtkRenderingAddOn_SRCS})
 
-  IF(USE_INIRIA3D)
-    TARGET_LINK_LIBRARIES(vtkCAT ${vtkInria3D_LIBS} ${vtkRenderingAddOn_LIBS})
-  ELSE(USE_INIRIA3D)
+  IF(USE_ITK)
+    TARGET_LINK_LIBRARIES(vtkCAT ${ITK_LIBS} ${vtkRenderingAddOn_LIBS})
+  ELSE(USE_ITK)
     TARGET_LINK_LIBRARIES(vtkCAT ${vtkRenderingAddOn_LIBS})
-  ENDIF(USE_INIRIA3D)
+  ENDIF(USE_ITK)
   
   ADD_EXECUTABLE(CAT_MarchingCubes CAT_MarchingCubes.cxx)  
   ADD_EXECUTABLE(CAT_SurfSmooth CAT_SurfSmooth.cxx)  

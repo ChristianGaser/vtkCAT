@@ -29,9 +29,14 @@ const char *Specification =
 #include "vtkPolyDataWriter.h"
 #include "vtkExtractEdges.h"
 #include "vtkMINCImageReader.h"
+#include <vtksys/SystemTools.hxx>
 #include "macro.h"
 #include "vtkFeatureEdges.h"
 #include "vtkCurvatures.h"
+
+#ifdef vtkCAT_USE_ITK
+#include <vtkMetaImageData.h>
+#endif
 
 int main( int argc, char **argv )
 {
@@ -45,7 +50,8 @@ int main( int argc, char **argv )
 
   const char *inputFileName = argv[2];
   const char *outputFileName = argv[3];
-  int is_minc = 0;
+  int isMinc = 0;
+  double origin[3];
   
   double isovalue = -1.0;
   if ( sscanf( argv[1], "%lf", &isovalue ) != 1 )
@@ -79,37 +85,38 @@ int main( int argc, char **argv )
 
 // ----------------------------------------------------------------------------
   ASSERT_MACRO( inputFileName );
-  int inputLength = strlen( inputFileName );
 
-  if ((inputFileName[ inputLength - 3 ] == 'm') && 
-      (inputFileName[ inputLength - 2 ] == 'h') &&
-      (inputFileName[ inputLength - 1 ] == 'd')) {
-        is_minc = 0;
-  }
-        
-  if ((inputFileName[ inputLength - 3 ] == 'm') && 
-      (inputFileName[ inputLength - 2 ] == 'n') &&
-      (inputFileName[ inputLength - 1 ] == 'c')) {
-        is_minc = 1;
-  }
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(inputFileName).c_str(),".mnc")) 
+    isMinc = 1;
 
 // ----------------------------------------------------------------------------
   PRINTOUT_MACRO( "read image " << inputFileName );
-  vtkMetaImageReader *inputReader = vtkMetaImageReader::New();
-  if ( is_minc == 0 ) {
-    ASSERT_MACRO( inputReader->CanReadFile( inputFileName ) == 3 );
-    inputReader->SetFileName( inputFileName );
-    inputReader->Update();
-  } else if ( is_minc == 1 ) {
-  inputReader->Delete();
-    vtkMINCImageReader *inputReader = vtkMINCImageReader::New();
-    inputReader->SetFileName( inputFileName );
-    inputReader->Update();
+  vtkImageData *image = vtkImageData::New();
+  vtkMINCImageReader *reader = vtkMINCImageReader::New();
+  
+#ifdef vtkCAT_USE_ITK
+  vtkMetaImageData* metaimage = vtkMetaImageData::New();
+  if(isMinc==0) 
+  {
+    metaimage->Read(inputFileName);
+    image = metaimage->GetImageData();
+    vtkMatrix4x4* matrix = metaimage->GetOrientationMatrix();
+    for (int i = 0; i < 3; i++) origin[i] = matrix->GetElement(i,3)/matrix->GetElement(i,i);
+    image->SetOrigin(origin);
+    matrix->Delete();
+  }
+#endif
+
+  if(isMinc) 
+  {
+    reader->SetFileName (inputFileName);
+    reader->GetOutput()->Update();
+    image = reader->GetOutput();
   }
     
   double inputScalarRange[2] = { 0.0, -1.0 };
 
-  inputReader->GetOutput()->GetScalarRange( inputScalarRange );
+  image->GetScalarRange( inputScalarRange );
 
   if ( isovalue < inputScalarRange[0] || isovalue > inputScalarRange[1] )
     {
@@ -124,9 +131,8 @@ int main( int argc, char **argv )
   vtkImageGaussianSmooth* gaussian = vtkImageGaussianSmooth::New();
   gaussian->SetDimensionality(3);
   gaussian->SetStandardDeviation(sdGaussianFiltering, sdGaussianFiltering, sdGaussianFiltering);
-  gaussian->SetInput(inputReader->GetOutput());
+  gaussian->SetInput(image);
   gaussian->Update();
-  inputReader->Delete();
 
 // ----------------------------------------------------------------------------
   DEBUG_MACRO( "image marching cubes" );
@@ -223,6 +229,12 @@ int main( int argc, char **argv )
 
   polyDataWriter->Delete();
   curvature->Delete();
+
+  reader->Delete();
+#ifdef vtkCAT_USE_ITK
+  metaimage->Delete();
+#endif  
+  image->Delete();
 
   END_MACRO( argv[0] );
   return 0;

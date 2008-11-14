@@ -7,10 +7,9 @@
 #include <vtkProperty.h>
 #include <vtkActor.h>
 #include <vtkImageData.h>
-#include <vtkMetaImageReader.h>
 #include "vtkMINCImageReader.h"
 
-#ifdef vtkCAT_USE_INIRIA3D
+#ifdef vtkCAT_USE_ITK
 #include <vtkMetaImageData.h>
 #endif
 
@@ -59,7 +58,7 @@ int main (int argc, char* argv[])
   vtkImageData *image = vtkImageData::New();
   vtkMINCImageReader *reader = vtkMINCImageReader::New();
   
-#ifdef vtkCAT_USE_INIRIA3D
+#ifdef vtkCAT_USE_ITK
   vtkMetaImageData* metaimage = vtkMetaImageData::New();
   if(isMinc==0) 
   {
@@ -296,7 +295,7 @@ int main (int argc, char* argv[])
   renderer3->Delete();
 
   reader->Delete();
-#ifdef vtkCAT_USE_INIRIA3D
+#ifdef vtkCAT_USE_ITK
   metaimage->Delete();
 #endif  
   image->Delete();

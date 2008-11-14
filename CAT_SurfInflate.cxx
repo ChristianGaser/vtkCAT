@@ -14,8 +14,6 @@ int main(int argc, char *argv[])
       exit(1);
    }
       
-   double	compressStretchThreshold, inflationFactor, regularSmoothingStrength, fingerSmoothingStrength;
-   int		regularSmoothingIterations, fingerSmoothingIterations, numberSmoothingCycles;
    int		outputType = 3; // 0 - inflated, 1- veryInflated, 2 - highSmooth, 3 - ellipsoid
 
    vtkInflateSmoothPolyData* inflateSmoothPolyData = vtkInflateSmoothPolyData::New();
