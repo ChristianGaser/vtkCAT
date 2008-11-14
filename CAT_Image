@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/Applications/CAT_Image.app/Contents/MacOS/CAT_Image $@
