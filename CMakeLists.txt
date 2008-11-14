@@ -168,3 +168,22 @@ IF (USE_VTK_FILE)
     LIBRARY DESTINATION lib)
     
 ENDIF (USE_VTK_FILE)
+
+#-----------------------------------------------------------------------------
+# doxygen (and other?) documentation
+
+FIND_PACKAGE(Doxygen)
+IF (DOXYGEN)
+  SET(MY_DOXYGEN_BUILD_DIR ${PROJECT_BINARY_DIR}/Doxygen)
+
+  CONFIGURE_FILE (
+    ${PROJECT_SOURCE_DIR}/Doxygen/doxygen.config.in
+    ${MY_DOXYGEN_BUILD_DIR}/doxygen.config
+  )
+
+  ADD_CUSTOM_TARGET(doc
+    ${DOXYGEN}
+    ${MY_DOXYGEN_BUILD_DIR}/doxygen.config
+  )
+ENDIF(DOXYGEN) 
+
