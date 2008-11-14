@@ -225,11 +225,13 @@ int vtkSurfaceReader::RequestData(
 	  vtkErrorMacro(<<"unknown dataset type : "<<this->FileName<<endl);
 	  throw vtkErrorCode::UnrecognizedFileTypeError;
     }
+    return 1;
     
   }
   catch (vtkErrorCode::ErrorIds error)
   {
-    throw error; 
+    throw error;
+    return 0; 
   }  
 }
 
