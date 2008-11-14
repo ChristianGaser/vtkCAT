@@ -142,7 +142,6 @@ int vtkInflateSmoothPolyData::RequestData(
   double* maximumLinearDistortion    = new double[numberOfPoints];
   double* averageArealCompression    = new double[numberOfPoints];
   double* compressedStretched        = new double[numberOfPoints];
-  double* stretching                 = new double[numberOfPoints];
 
   // Step 5: Calculate surface area of fiducial surface
   const double refSurfaceArea = vtkUtilities::GetSurfaceArea(refInput);

@@ -76,7 +76,7 @@ int vtkBICOBJReader::RequestData(
 
   char line[1024], Id;
   float xyz[3], ambient, diffuse, specular, specular_exponent, opacity;
-  float s, r, g, b, a;
+  float r, g, b, a;
   int nPoly, nPoint, colorId, i, index;
   
   input >> Id >> ambient >> diffuse >> specular >> specular_exponent >> opacity >> nPoint;

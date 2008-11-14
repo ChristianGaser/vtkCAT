@@ -202,10 +202,10 @@ int vtkSurfaceReader::RequestData(
   output->SetMaximumNumberOfPieces(1);
   
   if (!this->FileName) 
-    {
+  {
     vtkErrorMacro(<< "A FileName must be specified.");
     return 1;
-    }
+  }
 
   try
   {

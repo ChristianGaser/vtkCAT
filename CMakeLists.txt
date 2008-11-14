@@ -3,6 +3,8 @@ PROJECT (vtkCAT)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 IF(COMMAND cmake_policy)
+  cmake_policy(VERSION 2.4)
+  cmake_policy(SET CMP0005 OLD)
   cmake_policy(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)
 
@@ -40,22 +42,22 @@ ELSE(USE_INIRIA3D)
 ENDIF(USE_INIRIA3D)
 
 SET(vtkCAT_SRCS
-    lib/vtkCaretTgtSmoothPolyDataFilter.cxx
-    lib/vtkEllipsoidProjectPolyDataFilter.cxx
-    lib/vtkPolyDataCurvature.cxx
-    lib/vtkPolyDataDistortion.cxx
-    lib/vtkUtilities.cxx
-    lib/vtkPointTopologyHelper.cxx
-    lib/vtkAnalyzeRawReader.cxx
-    lib/vtkAnalyzeImageReader.cxx
-    lib/vtkBICOBJReader.cxx
-    lib/vtkSurfaceReader.cxx
-    lib/vtkFreesurferReader.cxx
-    lib/vtkInflateSmoothPolyData.cxx
-    lib/vtkInteractorStyleCAT.cxx
-    lib/vtkScalarBarWidgetCAT.cxx
-    lib/vtkMINCImageReader.cxx
-    lib/vtkMINCImageAttributes.cxx
+    vtkCAT/vtkCaretTgtSmoothPolyDataFilter.cxx
+    vtkCAT/vtkEllipsoidProjectPolyDataFilter.cxx
+    vtkCAT/vtkPolyDataCurvature.cxx
+    vtkCAT/vtkPolyDataDistortion.cxx
+    vtkCAT/vtkUtilities.cxx
+    vtkCAT/vtkPointTopologyHelper.cxx
+    vtkCAT/vtkAnalyzeRawReader.cxx
+    vtkCAT/vtkAnalyzeImageReader.cxx
+    vtkCAT/vtkBICOBJReader.cxx
+    vtkCAT/vtkSurfaceReader.cxx
+    vtkCAT/vtkFreesurferReader.cxx
+    vtkCAT/vtkInflateSmoothPolyData.cxx
+    vtkCAT/vtkInteractorStyleCAT.cxx
+    vtkCAT/vtkScalarBarWidgetCAT.cxx
+    vtkCAT/vtkMINCImageReader.cxx
+    vtkCAT/vtkMINCImageAttributes.cxx
 )
 
 SET(vtkRenderingAddOn_SRCS
@@ -89,7 +91,7 @@ IF (USE_VTK_FILE)
   INCLUDE (${USE_VTK_FILE})
   
   INCLUDE_DIRECTORIES(
-    ${vtkCAT_BINARY_DIR}/lib
+    ${vtkCAT_BINARY_DIR}/vtkCAT
     ${vtkCAT_BINARY_DIR}/vtkRenderingAddOn
   )
 
