@@ -106,15 +106,12 @@ int vtkFreesurferReader::RequestData(
 
   // intialise some structures to store the file contents in
   vtkPoints *points = vtkPoints::New(); 
-  vtkFloatArray *normals = vtkFloatArray::New();
   vtkCellArray *polys = vtkCellArray::New();
   vtkProperty *property = vtkProperty::New();
-  vtkUnsignedCharArray *scalars = vtkUnsignedCharArray::New();
 
-  char line[1024], Id;
+  char line[1024];
   float xyz[3];
-  float s, r, g, b, a;
-  int nPoly, nPoint, colorId, i, index, magic;
+  int nPoly, nPoint, i, index, magic;
   FILE *fp;
           
   if((fp = fopen(this->FileName, "rb")) == 0) {
@@ -133,7 +130,7 @@ int vtkFreesurferReader::RequestData(
   magic = Fread3(fp);
 
   if( magic == QUAD_FILE_MAGIC_NUMBER) {
-    fprintf(stderr, "QUAD_FILE_MAGIC_NUMBER not yet prepared %s.\n");
+    fprintf(stderr, "QUAD_FILE_MAGIC_NUMBER not yet prepared.\n");
     return(0);
   } else if( magic == TRIANGLE_FILE_MAGIC_NUMBER) {
     fgets(line, 1024, fp);

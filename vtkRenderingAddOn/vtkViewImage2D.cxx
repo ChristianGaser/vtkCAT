@@ -573,7 +573,7 @@ void vtkViewImage2D::UpdatePosition ()
 	  case vtkViewImage::AXIAL_ID :
 
             mm = ((double)imCoor[2]+origin[2]/spacing[2] )*spacing[2];
-            os << imCoor[2] << " / " << dims[2]-1 << std::endl;
+            os << imCoor[2]+1 << " / " << dims[2] << std::endl;
             os << "z: " << mm << "mm" << std::endl;
             break;
             
@@ -581,7 +581,7 @@ void vtkViewImage2D::UpdatePosition ()
 	  case vtkViewImage::CORONAL_ID :
 
             mm = ((double)imCoor[1]+origin[1]/spacing[1] )*spacing[1];
-            os << imCoor[1] << " / " << dims[1]-1 << std::endl;
+            os << imCoor[1]+1 << " / " << dims[1] << std::endl;
             os << "y: " << mm << "mm" << std::endl;
             break;
 
@@ -589,7 +589,7 @@ void vtkViewImage2D::UpdatePosition ()
 	  case vtkViewImage::SAGITTAL_ID :
 
             mm = ((double)imCoor[0]+origin[0]/spacing[0] )*spacing[0];
-            os << imCoor[0] << " / " << dims[0]-1 << std::endl;
+            os << imCoor[0]+1 << " / " << dims[0] << std::endl;
             os << "x: " << mm << "mm" << std::endl;
             break;
       }

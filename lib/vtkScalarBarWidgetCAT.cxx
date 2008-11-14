@@ -147,14 +147,6 @@ int vtkScalarBarWidgetCAT::ComputeStateBasedOnPosition(int X, int Y,
 {
   int Result;
   
-  // what are we modifying? The position, or size?
-  // if size what piece?
-  // if we are within 7 pixels of an edge...
-  int e1 = 0;
-  int e2 = 0;
-  int e3 = 0;
-  int e4 = 0;
-
   // assume we are moving
   Result = vtkScalarBarWidgetCAT::Moving;
 

@@ -13,7 +13,31 @@ SET(vtkCAT_VERSION_MINOR 1)
 SET(vtkCAT_VERSION_BUILD 0)
 SET(vtkCAT_VERSION "${vtkCAT_VERSION_MAJOR}.${vtkCAT_VERSION_MINOR}.${vtkCAT_VERSION_BUILD}")
 
-#SUBDIRS(vtkRenderingAddOn)
+#--------------
+# vtkINRIA3D
+#--------------
+SET(vtkINRIA3D_DIR /usr/local/lib)
+
+OPTION(USE_INIRIA3D "If ON, Compile vtkInria3D extensions" OFF)
+IF(USE_INIRIA3D)
+  FIND_PACKAGE(vtkINRIA3D)
+  IF(vtkINRIA3D_FOUND)
+    FIND_PACKAGE(ITK REQUIRED)
+    IF(ITK_FOUND)
+      INCLUDE(${ITK_USE_FILE})		
+    ELSE(ITK_FOUND)
+      MESSAGE(FATAL_ERROR "ITK not found. Please set ITK_DIR.")
+    ENDIF(ITK_FOUND)
+
+	INCLUDE(${vtkINRIA3D_USE_FILE})		
+    SET(CMAKE_C_FLAGS    "${CMAKE_C_FLAGS}    -DvtkCAT_USE_INIRIA3D")
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -DvtkCAT_USE_INIRIA3D")
+  ELSE(vtkINRIA3D_FOUND)
+	MESSAGE(FATAL_ERROR "vtkINRIA3D not found. Please set vtkINRIA3D_DIR.")
+  ENDIF(vtkINRIA3D_FOUND)
+ELSE(USE_INIRIA3D)
+  SET(vtkINRIA3D_FOUND OFF)
+ENDIF(USE_INIRIA3D)
 
 SET(vtkCAT_SRCS
     lib/vtkCaretTgtSmoothPolyDataFilter.cxx
@@ -79,38 +103,47 @@ IF (USE_VTK_FILE)
     vtkNetCDF
     vtkWidgets
     vtkCAT
-    )
-
-SET(vtkRenderingAddOn_LIBS
-    vtkCommon
-    vtkRendering
-    vtkWidgets
     vtkVolumeRendering
     vtkHybrid
-    vtkImaging
+  )
+
+  SET(vtkRenderingAddOn_LIBS
 	vtkRenderingAddOn
-)
+  )
+
+  SET(vtkInria3D_LIBS
+    vtkDataManagement
+	itkAddOn
+	${ITK_LIBRARIES}
+	ITKIO
+	ITKBasicFilters
+  )
 
   ADD_LIBRARY(vtkCAT STATIC ${vtkCAT_SRCS})
   ADD_LIBRARY(vtkRenderingAddOn STATIC ${vtkRenderingAddOn_SRCS})
 
-  TARGET_LINK_LIBRARIES(vtkCAT ${vtkRenderingAddOn_LIBS})
-
+  IF(USE_INIRIA3D)
+    TARGET_LINK_LIBRARIES(vtkCAT ${vtkInria3D_LIBS} ${vtkRenderingAddOn_LIBS})
+  ELSE(USE_INIRIA3D)
+    TARGET_LINK_LIBRARIES(vtkCAT ${vtkRenderingAddOn_LIBS})
+  ENDIF(USE_INIRIA3D)
+  
   ADD_EXECUTABLE(CAT_MarchingCubes CAT_MarchingCubes.cxx)  
   ADD_EXECUTABLE(CAT_SurfSmooth CAT_SurfSmooth.cxx)  
+
   IF(APPLE)
     ADD_EXECUTABLE(CAT_View MACOSX_BUNDLE CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image MACOSX_BUNDLE CAT_Image.cxx)  
-    ADD_CUSTOM_COMMAND(
-                      TARGET CAT_View
-                      PRE_LINK
-                      COMMAND mkdir -p CAT_View.app/Contents/MacOS 
-                      COMMENT "Creating CAT_View.app")
     ADD_CUSTOM_COMMAND(
                       TARGET CAT_Image
                       PRE_LINK
                       COMMAND mkdir -p CAT_Image.app/Contents/MacOS 
                       COMMENT "Creating CAT_Image.app")
+    ADD_CUSTOM_COMMAND(
+                      TARGET CAT_View
+                      PRE_LINK
+                      COMMAND mkdir -p CAT_View.app/Contents/MacOS 
+                      COMMENT "Creating CAT_View.app")
   ELSE(APPLE)
     ADD_EXECUTABLE(CAT_View CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image CAT_Image.cxx)  

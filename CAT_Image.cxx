@@ -1,3 +1,4 @@
+
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
@@ -7,11 +8,14 @@
 #include <vtkActor.h>
 #include <vtkImageData.h>
 #include <vtkMetaImageReader.h>
+#include "vtkMINCImageReader.h"
+
+#ifdef vtkCAT_USE_INIRIA3D
+#include <vtkMetaImageData.h>
+#endif
 
 #include "vtkViewImage2D.h"
 #include "vtkViewImage3D.h"
-#include "vtkMINCImageReader.h"
-#include "vtkAnalyzeImageReader.h"
 #include "vtkSurfaceReader.h"
 
 static void usage(const char* const prog);
@@ -21,10 +25,9 @@ static int defaultWindowSize = 400;
 int main (int argc, char* argv[])
 {
 
-  int polyFormat  = -1;
-  int imageFormat = -1;
-  
+  int isMinc = 0;
   int windowSize = defaultWindowSize;
+  double origin[3];
 
   int indx = -1;
   for (int j = 1; j < argc; j++) {
@@ -50,19 +53,32 @@ int main (int argc, char* argv[])
   const char *imageFileName = argv[indx];
   const int numArgs = argc - indx;
 
-  // Analyze is not yet working
-  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(imageFileName).c_str(),".hdr")) 
-    imageFormat = 0;
-  
   if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(imageFileName).c_str(),".mnc")) 
-    imageFormat = 1;
+    isMinc = 1;
 
+  vtkImageData *image = vtkImageData::New();
   vtkMINCImageReader *reader = vtkMINCImageReader::New();
-  reader->SetFileName (imageFileName);
-  reader->GetOutput()->Update();
+  
+#ifdef vtkCAT_USE_INIRIA3D
+  vtkMetaImageData* metaimage = vtkMetaImageData::New();
+  if(isMinc==0) 
+  {
+    metaimage->Read(imageFileName);
+    image = metaimage->GetImageData();
+    vtkMatrix4x4* matrix = metaimage->GetOrientationMatrix();
+    for (int i = 0; i < 3; i++) origin[i] = matrix->GetElement(i,3)/matrix->GetElement(i,i);
+    image->SetOrigin(origin);
+    matrix->Delete();
+  }
+#endif
 
-  int *extent = reader->GetOutput()->GetWholeExtent();
-
+  if(isMinc) 
+  {
+    reader->SetFileName (imageFileName);
+    reader->GetOutput()->Update();
+    image = reader->GetOutput();
+  }
+  
   // read up to 3 surfaces
   vtkSurfaceReader *polyDataReader  = vtkSurfaceReader::New();
   vtkSurfaceReader *polyDataReader2 = vtkSurfaceReader::New();
@@ -204,9 +220,9 @@ int main (int argc, char* argv[])
   view2->AddChild (view3);
   view3->AddChild (view1);
   
-  view1->SetImage (reader->GetOutput());
-  view2->SetImage (reader->GetOutput());
-  view3->SetImage (reader->GetOutput());
+  view1->SetImage (image);
+  view2->SetImage (image);
+  view3->SetImage (image);
 
   vtkProperty* prop  = vtkProperty::New();
   vtkProperty* prop2 = vtkProperty::New();
@@ -280,6 +296,10 @@ int main (int argc, char* argv[])
   renderer3->Delete();
 
   reader->Delete();
+#ifdef vtkCAT_USE_INIRIA3D
+  metaimage->Delete();
+#endif  
+  image->Delete();
 
   prop->Delete();
   prop2->Delete();
