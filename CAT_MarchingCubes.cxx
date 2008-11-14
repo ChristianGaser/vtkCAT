@@ -105,6 +105,7 @@ int main( int argc, char **argv )
     image->SetOrigin(origin);
     matrix->Delete();
   }
+
 #endif
 
   if(isMinc) 
@@ -114,6 +115,8 @@ int main( int argc, char **argv )
     image = reader->GetOutput();
   }
     
+  reader->Delete();
+
   double inputScalarRange[2] = { 0.0, -1.0 };
 
   image->GetScalarRange( inputScalarRange );
@@ -230,10 +233,6 @@ int main( int argc, char **argv )
   polyDataWriter->Delete();
   curvature->Delete();
 
-  reader->Delete();
-#ifdef vtkCAT_USE_ITK
-  metaimage->Delete();
-#endif  
   image->Delete();
 
   END_MACRO( argv[0] );
