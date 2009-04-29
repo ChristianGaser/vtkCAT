@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkSynchronizedView.h>
+#include <vtkSynchronizedView.h>
 
 #include "vtkObjectFactory.h"
 #include "vtkInteractorObserver.h"
@@ -30,7 +30,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkProperty.h"
 #include "vtkProperty2D.h"
 #include "vtkTextProperty.h"
-#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
+#include <vtkOrientationAnnotation.h>
 
 #include "assert.h"
 #include <algorithm>

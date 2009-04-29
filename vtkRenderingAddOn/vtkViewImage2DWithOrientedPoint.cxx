@@ -16,15 +16,15 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage2DWithOrientedPoint.h>
+#include <vtkViewImage2DWithOrientedPoint.h>
 
 #include "vtkImageData.h"
 #include "vtkLookupTable.h"
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidgetCallback.h>
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
+#include <vtkImageOrientedPointWidgetCallback.h>
+#include <vtkImageOrientedPointWidget.h>
 
 #include "vtkImageActor.h"
-#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
+#include <vtkFillImageWithPolyData.h>
 #include "vtkGlyphSource2D.h"
 #include "vtkMapper.h"
 #include "vtkInteractorObserver.h"

@@ -16,11 +16,11 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidgetCallback.h>
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
+#include <vtkImageOrientedPointWidgetCallback.h>
+#include <vtkImageOrientedPointWidget.h>
 
-#include <vtkRenderingAddOn/vtkViewImage2DWithOrientedPoint.h>
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
+#include <vtkViewImage2DWithOrientedPoint.h>
+#include <vtkImageOrientedPointWidget.h>
 #include "vtkImageData.h"
 #include "vtkMatrix4x4.h"
 #include "vtkImageReslice.h"

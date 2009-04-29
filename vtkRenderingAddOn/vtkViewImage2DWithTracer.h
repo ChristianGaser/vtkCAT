@@ -25,11 +25,11 @@ PURPOSE.  See the above copyright notices for more information.
 #include<iostream>
 
 // vtk includes
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkViewImage2D.h>
 #include <vtkImageTracerWidget.h>
 #include <vtkImageData.h>
 #include <vtkLookupTable.h>
-#include <vtkRenderingAddOn/vtkImageTracerWidgetCallback.h>
+#include <vtkImageTracerWidgetCallback.h>
 
 
 class VTK_RENDERINGADDON_EXPORT vtkViewImage2DWithTracer: public vtkViewImage2D

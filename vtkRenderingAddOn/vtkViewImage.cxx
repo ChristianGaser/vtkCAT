@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage.h>
+#include <vtkViewImage.h>
 
 #include "vtkObjectFactory.h"
 

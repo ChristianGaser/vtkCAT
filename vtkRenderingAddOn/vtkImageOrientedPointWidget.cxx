@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
+#include <vtkImageOrientedPointWidget.h>
 
 #include "vtkAbstractPicker.h"
 #include "vtkActor.h"

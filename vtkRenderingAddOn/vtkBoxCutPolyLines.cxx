@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkBoxCutPolyLines.h>
+#include <vtkBoxCutPolyLines.h>
 
 #include <vtkPointData.h>
 #include <vtkPolyData.h>

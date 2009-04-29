@@ -147,10 +147,10 @@ int main (int argc, char* argv[])
   renderWindow2->SetSize(windowSize, windowSize);
   renderWindow3->SetSize(windowSize, windowSize);
 
-  renderWindow1->SetPosition (0, 60+windowSize);
-  renderWindow2->SetPosition (0, 50);
-  renderWindow3->SetPosition (windowSize, 50);
-    
+  renderWindow1->SetPosition (0, 40);
+  renderWindow2->SetPosition (0, 60+windowSize);
+  renderWindow3->SetPosition (windowSize, 60+windowSize);
+
   renderWindowInteractor1->SetRenderWindow (renderWindow1);
   renderWindowInteractor2->SetRenderWindow (renderWindow2);
   renderWindowInteractor3->SetRenderWindow (renderWindow3);

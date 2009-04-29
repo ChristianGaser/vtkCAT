@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImageBlendWithMask.h>
+#include <vtkImageBlendWithMask.h>
 
 #include "vtkImageData.h"
 #include "vtkInformation.h"

@@ -22,7 +22,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkINRIA3DConfigure.h"
 
 #include <vtkInteractorStyleImage.h>
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkViewImage2D.h>
 
 // Motion flags (See VTKIS_PICK and so on in vtkInteractorStyleImage.h)
 #define VTKIS_MEASURE      5050

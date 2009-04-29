@@ -16,13 +16,13 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImage3DImagePlaneCallback.h>
+#include <vtkImage3DImagePlaneCallback.h>
 
 #include <vtkPlaneWidget.h>
 #include <vtkImageReslice.h>
 #include <vtkImageData.h>
 #include <vtkMath.h>
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkViewImage2D.h>
 #include <vtkPlane.h>
 
 

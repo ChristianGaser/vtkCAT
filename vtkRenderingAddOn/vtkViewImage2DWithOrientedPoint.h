@@ -25,8 +25,8 @@ PURPOSE.  See the above copyright notices for more information.
 #include<iostream>
 
 // wx includes
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
-#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
+#include <vtkViewImage2D.h>
+#include <vtkImageOrientedPointWidget.h>
 
 class vtkImageData;
 class vtkLookupTable;

@@ -16,14 +16,14 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
+#include <vtkInteractorStyleImage2D.h>
 
 #include "vtkAbstractPropPicker.h"
 #include "vtkAssemblyPath.h"
 #include "vtkMath.h"
 #include "vtkObjectFactory.h"
 #include "vtkRenderWindowInteractor.h"
-#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
+#include <vtkViewImage2DCommand.h>
 #include <vtkImageData.h>
 #include <vtkRenderWindow.h>
 

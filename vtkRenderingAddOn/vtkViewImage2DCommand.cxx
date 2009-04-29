@@ -20,8 +20,8 @@ PURPOSE.  See the above copyright notices for more information.
 #  pragma warning (disable : 4018) 
 #endif
 
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
-#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
+#include <vtkViewImage2D.h>
+#include <vtkInteractorStyleImage2D.h>
 #include "vtkAbstractPropPicker.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
@@ -29,7 +29,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkImageData.h"
 #include <string.h> 
 
-#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
+#include <vtkViewImage2DCommand.h>
 
 
 vtkViewImage2DCommand::vtkViewImage2DCommand() :

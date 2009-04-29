@@ -1,4 +1,4 @@
-/*=========================================================================
+﻿/*=========================================================================
 
 Program:   vtkINRIA3D
 Module:    $Id: vtkImage3DCroppingBoxCallback.cxx 1133 2009-03-18 17:37:24Z filus $
@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImage3DCroppingBoxCallback.h>
+#include <vtkImage3DCroppingBoxCallback.h>
 
 #include <vtkBoxWidget.h>
 #include <vtkPolyData.h>

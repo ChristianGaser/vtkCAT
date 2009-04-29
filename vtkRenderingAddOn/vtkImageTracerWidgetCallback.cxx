@@ -16,9 +16,9 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkImageTracerWidgetCallback.h>
+#include <vtkImageTracerWidgetCallback.h>
 
-#include <vtkRenderingAddOn/vtkViewImage2DWithTracer.h>
+#include <vtkViewImage2DWithTracer.h>
 #include "vtkImageTracerWidget.h"
 #include "vtkImageData.h"
 #include "vtkMatrix4x4.h"

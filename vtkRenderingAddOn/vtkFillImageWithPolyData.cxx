@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
+#include <vtkFillImageWithPolyData.h>
 
 #include "vtkImageData.h"
 #include "vtkInformation.h"

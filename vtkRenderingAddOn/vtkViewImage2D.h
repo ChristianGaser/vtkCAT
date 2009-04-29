@@ -22,7 +22,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkINRIA3DConfigure.h"
 
 #include <iostream>
-#include <vtkRenderingAddOn/vtkViewImage.h>
+#include <vtkViewImage.h>
 
 class vtkImageActor;
 class vtkProp;

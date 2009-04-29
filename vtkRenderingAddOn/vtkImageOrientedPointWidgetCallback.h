@@ -23,7 +23,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 #include "vtkCommand.h"
 #include "vtkPolyData.h"
-#include <vtkRenderingAddOn/vtkViewImage2DWithOrientedPoint.h>
+#include <vtkViewImage2DWithOrientedPoint.h>
 #include "vtkObject.h"
 #include "vtkImageMapToWindowLevelColors.h"
 

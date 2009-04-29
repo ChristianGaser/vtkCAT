@@ -16,9 +16,9 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage2DFullCommand.h>
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
-#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
+#include <vtkViewImage2DFullCommand.h>
+#include <vtkViewImage2D.h>
+#include <vtkInteractorStyleImage2D.h>
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 

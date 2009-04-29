@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkViewImage2D.h>
 
 #include "vtkInteractorObserver.h"
 #include "vtkInteractorStyleSwitch.h"
@@ -33,16 +33,16 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkCornerAnnotation.h>
 #include <vtkLightCollection.h>
 #include <vtkLight.h>
-#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
+#include <vtkOrientationAnnotation.h>
 
 #include "assert.h"
 #include <iostream>
 #include <sstream>
 #include <cmath>
 
-#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
-#include <vtkRenderingAddOn/vtkViewImage2DFullCommand.h>
-#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
+#include <vtkViewImage2DCommand.h>
+#include <vtkViewImage2DFullCommand.h>
+#include <vtkInteractorStyleImage2D.h>
 #include "vtkCamera.h"
 #include "vtkImageReslice.h"
 #include "vtkRenderWindow.h"
@@ -55,7 +55,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkPolyDataMapper.h"
 #include "vtkLineSource.h"
 #include "vtkLookupTable.h"
-#include <vtkRenderingAddOn/vtkImageBlendWithMask.h>
+#include <vtkImageBlendWithMask.h>
 #include "vtkImageBlend.h"
 #include <vtkPolyDataMapper2D.h>
 #include <vtkActor2D.h>
@@ -376,7 +376,7 @@ void vtkViewImage2D::InitializeImagePositionAndSize()
     
     // Get the bounds of the image: coordinates in the real world
     double bnds[6];
-    this->ImageActor->GetBounds(bnds);
+    this->GetImage()->GetBounds(bnds);
     
     
     // extension of the image:
@@ -552,8 +552,8 @@ void vtkViewImage2D::UpdatePosition ()
 
   this->GetCurrentPoint(pos);
 
-  double* spacing = this->GetImage()->GetSpacing();
-  double* origin  = this->GetImage()->GetOrigin();
+  double *spacing = this->GetImage()->GetSpacing();
+  double *origin  = this->GetImage()->GetOrigin();
   double *imBounds = this->GetImage()->GetBounds();
 
   // check if pos lies inside image bounds
@@ -648,6 +648,7 @@ void vtkViewImage2D::UpdatePosition ()
       this->GetCurrentVoxelCoordinates(imCoor);
       int dims[3];
       this->GetImage()->GetDimensions (dims);
+      double mm;
       
       std::ostringstream os;
       os << "Slice: ";
@@ -678,7 +679,7 @@ void vtkViewImage2D::UpdatePosition ()
       }
       
       os << "Value: " << this->GetCurrentPointDoubleValue() << std::endl;
-      os << "<window>\n<level>";
+//      os << "<window>\n<level>";
       this->SetUpRightAnnotation(os.str().c_str());
     }
 
@@ -1191,10 +1192,6 @@ vtkActor* vtkViewImage2D::AddDataSet (vtkDataSet* dataset,  vtkProperty* propert
        
     */
     
-    int *extent  = this->ImageReslice->GetOutput()->GetExtent();  
-    double *origin  = this->ImageReslice->GetOutput()->GetOrigin();
-    double *spacing = this->ImageReslice->GetOutput()->GetSpacing();
-
     if (doit)
     {
       

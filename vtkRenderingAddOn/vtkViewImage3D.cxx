@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage3D.h>
+#include <vtkViewImage3D.h>
 
 #ifndef VTK_MAJOR_VERSION
 #  include "vtkVersion.h"
@@ -52,7 +52,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkImageReslice.h>
 #include "vtkRenderWindow.h"
 #include "vtkScalarsToColors.h"
-#include <vtkRenderingAddOn/vtkDataSet3DCroppingPlaneCallback.h>
+#include <vtkDataSet3DCroppingPlaneCallback.h>
 #include "vtkColorTransferFunction.h"
 #include <vtkCamera.h>
 #include <vtkImageShiftScale.h>

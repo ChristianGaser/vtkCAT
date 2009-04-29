@@ -16,10 +16,10 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkViewImage2DWithTracer.h>
+#include <vtkViewImage2DWithTracer.h>
 
 #include "vtkImageActor.h"
-#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
+#include <vtkFillImageWithPolyData.h>
 #include "vtkGlyphSource2D.h"
 #include "vtkProperty.h"
 #include "vtkMapper.h"

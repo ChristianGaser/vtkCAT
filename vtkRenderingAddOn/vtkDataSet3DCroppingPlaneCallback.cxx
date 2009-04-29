@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkDataSet3DCroppingPlaneCallback.h>
+#include <vtkDataSet3DCroppingPlaneCallback.h>
 
 #include <vtkPlaneWidget.h>
 #include <vtkDataSet.h>

@@ -16,7 +16,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 // version vtkRenderingAddOn
-#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
+#include <vtkOrientationAnnotation.h>
 #include "vtkObjectFactory.h"
 #include "vtkTextProperty.h"
 #include "vtkTextMapper.h"

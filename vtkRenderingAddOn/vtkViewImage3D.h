@@ -22,7 +22,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkINRIA3DConfigure.h"
 
 #include <vector>
-#include <vtkRenderingAddOn/vtkViewImage.h>
+#include <vtkViewImage.h>
 #include <vtkRenderer.h>
 #include <vtkImageMapToWindowLevelColors.h>
 #include <vtkImageMapToColors.h>
@@ -34,7 +34,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkVolumeRayCastMIPFunction.h>
 #include <vtkVolumeRayCastIsosurfaceFunction.h>
 #include <vtkVolumeProperty.h>
-#include <vtkRenderingAddOn/vtkImage3DCroppingBoxCallback.h>
+#include <vtkImage3DCroppingBoxCallback.h>
 #include <vtkObjectFactory.h>
 
 class vtkImageData;
