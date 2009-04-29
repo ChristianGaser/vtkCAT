@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage.h 931 2008-09-08 13:46:38Z filus $
+Module:    $Id: vtkViewImage.h 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-09-08 15:46:38 +0200 (Mo, 08 Sep 2008) $
-Version:   $Revision: 931 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,12 +15,13 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtkViewImage_h_
 #define _vtkViewImage_h_
 
 #include "vtkINRIA3DConfigure.h"
 
-#include "vtkSynchronizedView.h"
+#include <vtkRenderingAddOn/vtkSynchronizedView.h>
 
 #include <vtkCommand.h>
 #include <vtkTransform.h>
@@ -272,7 +273,9 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage : public vtkSynchronizedView
   
   /** Set the Slice to display. Z is relative to the displayed plan. */
   void SyncSetZSlice (int p_slice);
-  virtual void SetZSlice(int p_slice){};
+  virtual void SetZSlice(int p_slice) {
+      (void) p_slice;
+  }
 
 
   /** */
@@ -464,7 +467,9 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage : public vtkSynchronizedView
      This method is synchronized.
   */
   void SyncSetOverlappingImage (vtkImageData* image);
-  virtual void SetOverlappingImage (vtkImageData* image){}
+  virtual void SetOverlappingImage (vtkImageData* image) {
+      (void) image;
+  }
 
   /**
      Remove the overlapping image (if any)
@@ -530,6 +535,7 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage : public vtkSynchronizedView
 
   // derived from vtkSynchronizedView
   virtual void Initialize(void);
+  virtual void Uninitialize(void);
 
 
   /**

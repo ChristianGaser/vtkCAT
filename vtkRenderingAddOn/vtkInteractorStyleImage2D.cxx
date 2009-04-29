@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkInteractorStyleImage2D.cxx 752 2008-03-11 16:32:52Z filus $
+Module:    $Id: vtkInteractorStyleImage2D.cxx 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-03-11 17:32:52 +0100 (Di, 11 Mär 2008) $
-Version:   $Revision: 752 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,18 +15,19 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkInteractorStyleImage2D.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
 
 #include "vtkAbstractPropPicker.h"
 #include "vtkAssemblyPath.h"
 #include "vtkMath.h"
 #include "vtkObjectFactory.h"
 #include "vtkRenderWindowInteractor.h"
-#include "vtkViewImage2DCommand.h"
+#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
 #include <vtkImageData.h>
 #include <vtkRenderWindow.h>
 
-vtkCxxRevisionMacro (vtkInteractorStyleImage2D, "$Revision: 752 $");
+vtkCxxRevisionMacro (vtkInteractorStyleImage2D, "$Revision: 1137 $");
 vtkStandardNewMacro (vtkInteractorStyleImage2D);
 
 #include <vtkCamera.h>
@@ -126,7 +127,7 @@ void vtkInteractorStyleImage2D::OnLeftButtonDown()
   int y = this->Interactor->GetEventPosition()[1];
 
   this->FindPokedRenderer(x, y);
-  if ( !this->CurrentRenderer )
+  if ( !this->View || !this->CurrentRenderer )
   {
     return;
   }
@@ -169,7 +170,7 @@ void vtkInteractorStyleImage2D::OnMiddleButtonDown()
   int y = this->Interactor->GetEventPosition()[1];
 
   this->FindPokedRenderer(x, y);
-  if ( !this->CurrentRenderer )
+  if ( !this->View || !this->CurrentRenderer )
   {
     return;
   }
@@ -265,7 +266,7 @@ void vtkInteractorStyleImage2D::OnRightButtonDown()
   int y = this->Interactor->GetEventPosition()[1];
 
   this->FindPokedRenderer(x, y);
-  if ( !this->CurrentRenderer )
+  if ( !this->View || !this->CurrentRenderer )
   {
     return;
   }
@@ -329,6 +330,11 @@ void vtkInteractorStyleImage2D::OnRightButtonUp()
 //----------------------------------------------------------------------------
 void vtkInteractorStyleImage2D::OnChar() 
 {
+	if ( !this->View )
+	{
+		return;
+	}
+
   vtkRenderWindowInteractor *rwi = this->Interactor;
 
   double factor = 0.0;

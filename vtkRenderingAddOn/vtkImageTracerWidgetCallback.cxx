@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkImageTracerWidgetCallback.cxx 739 2008-03-07 16:02:41Z filus $
+Module:    $Id: vtkImageTracerWidgetCallback.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-03-07 17:02:41 +0100 (Fr, 07 Mär 2008) $
-Version:   $Revision: 739 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,9 +15,10 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkImageTracerWidgetCallback.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkImageTracerWidgetCallback.h>
 
-#include "vtkViewImage2DWithTracer.h"
+#include <vtkRenderingAddOn/vtkViewImage2DWithTracer.h>
 #include "vtkImageTracerWidget.h"
 #include "vtkImageData.h"
 #include "vtkMatrix4x4.h"

@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage3D.cxx 955 2008-09-14 14:04:11Z filus $
+Module:    $Id: vtkViewImage3D.cxx 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-09-14 16:04:11 +0200 (So, 14 Sep 2008) $
-Version:   $Revision: 955 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,13 +15,15 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage3D.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage3D.h>
 
 #ifndef VTK_MAJOR_VERSION
 #  include "vtkVersion.h"
 #endif
 
 #include <vtkInteractorStyleTrackball.h>
+#include <vtkRenderWindowInteractor.h>
 #include <vtkRendererCollection.h>
 #include <vtkImageData.h>
 #include <vtkPiecewiseFunction.h>
@@ -50,7 +52,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkImageReslice.h>
 #include "vtkRenderWindow.h"
 #include "vtkScalarsToColors.h"
-#include "vtkDataSet3DCroppingPlaneCallback.h"
+#include <vtkRenderingAddOn/vtkDataSet3DCroppingPlaneCallback.h>
 #include "vtkColorTransferFunction.h"
 #include <vtkCamera.h>
 #include <vtkImageShiftScale.h>
@@ -65,13 +67,14 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkPolyDataNormals.h>
 #include <vtkCellData.h>
 
+
 #include <iostream>
 
 
 extern int vtkrint(double a);
 
 
-vtkCxxRevisionMacro(vtkViewImage3D, "$Revision: 955 $");
+vtkCxxRevisionMacro(vtkViewImage3D, "$Revision: 1137 $");
 vtkStandardNewMacro(vtkViewImage3D);
 
 
@@ -81,15 +84,16 @@ vtkViewImage3D::vtkViewImage3D ()
   this->OverlappingImage = 0;
   
   // Volume Rendering stuff
-  this->VolumeProperty  = vtkVolumeProperty::New();
+  this->VolumeProperty  = vtkVolumeProperty::New(); 
   this->VolumeActor     = vtkVolume::New();
   this->VolumeRayCastMapper             = vtkVolumeRayCastMapper::New();
   this->VolumeRayCastMIPFunction        = vtkVolumeRayCastMIPFunction::New();
   this->VolumeRayCastCompositeFunction  = vtkVolumeRayCastCompositeFunction::New();
   this->VolumeRayCastIsosurfaceFunction = vtkVolumeRayCastIsosurfaceFunction::New();
   this->OpacityFunction                 = vtkPiecewiseFunction::New();
-  this->ColorFunction                   = vtkColorTransferFunction::New();
-
+  this->ColorFunction                   = vtkColorTransferFunction::New(); 
+  
+				
   // Multiplanar reconstruction stuff
   this->AxialColorMapper       = vtkImageMapToColors::New();
   this->SagittalColorMapper    = vtkImageMapToColors::New();
@@ -214,10 +218,12 @@ vtkViewImage3D::vtkViewImage3D ()
 
   
   // init the interactor style:
+  /*
   vtkInteractorStyleSwitch* interactorStyle = vtkInteractorStyleSwitch::New();
   interactorStyle->SetCurrentStyleToTrackballCamera();
   this->SetInteractorStyle (interactorStyle);
   interactorStyle->Delete();
+  */
 
 
   
@@ -314,7 +320,12 @@ vtkViewImage3D::vtkViewImage3D ()
 
 vtkViewImage3D::~vtkViewImage3D()
 {
- 
+  this->Marker->SetEnabled (0);
+  this->BoxWidget->SetEnabled (0);
+  this->PlaneWidget->SetEnabled (0);
+
+  this->BoxWidget->RemoveObserver (this->Callback);
+
   // delete all vtk objetcts:
   this->VolumeMapper3D->Delete();
   this->VolumeProperty->Delete();
@@ -348,21 +359,46 @@ vtkViewImage3D::~vtkViewImage3D()
 }
 
 
-void vtkViewImage3D::SetInteractor (vtkRenderWindowInteractor* arg)
+void vtkViewImage3D::Initialize()
 {
-  if( !arg )
-  {
-    return;
-  }
-  
-  vtkViewImage::SetInteractor (arg);
-  
-  this->BoxWidget->SetInteractor ( arg );
-  this->PlaneWidget->SetInteractor ( arg );
+	vtkViewImage::Initialize();
 
-  // activate the orientation cube
-  this->Marker->SetInteractor ( arg );
+	if( this->GetRenderWindowInteractor() )
+	{
+      this->BoxWidget->SetInteractor ( this->GetRenderWindowInteractor() );
+	  this->PlaneWidget->SetInteractor ( this->GetRenderWindowInteractor() );
+	  this->Marker->SetInteractor ( this->GetRenderWindowInteractor() );
+
+	  vtkInteractorStyleSwitch* interactorStyle = vtkInteractorStyleSwitch::New();
+	  interactorStyle->SetCurrentStyleToTrackballCamera();
+      this->GetRenderWindowInteractor()->SetInteractorStyle (interactorStyle);
+      interactorStyle->Delete();
+	}
 }
+
+void vtkViewImage3D::Uninitialize()
+{
+  this->BoxWidget->SetInteractor (NULL);
+  this->Marker->SetInteractor ( NULL );
+  this->PlaneWidget->SetInteractor ( NULL );
+
+  if (this->GetRenderWindowInteractor())
+	  this->GetRenderWindowInteractor()->SetInteractorStyle( NULL );
+
+  this->RemoveActor (this->ActorSagittal);
+  this->RemoveActor (this->ActorCoronal);
+  this->RemoveActor (this->ActorAxial);
+  
+  this->RemoveActor (this->AxesActor);
+  this->RemoveActor (this->VolumeActor);
+  for (unsigned int i=0; i<this->DataSetActorList.size(); i++)
+  {
+	this->RemoveActor( this->DataSetActorList[i] );
+  }
+
+  vtkViewImage::Uninitialize();
+}
+
 
 
 void vtkViewImage3D::PrepareForDelete()
@@ -378,9 +414,21 @@ void vtkViewImage3D::SetImage ( vtkImageData* image )
   {
     return;
   }
+
+  int* extent = image->GetExtent();
+  if( extent[1]<extent[0] || extent[3]<extent[2] || extent[5]<extent[4] )
+  {
+    vtkErrorMacro ( << "Image extent is not valid: " << extent[0] << " "
+		    << extent[1] << " "
+		    << extent[2] << " "
+		    << extent[3] << " "
+		    << extent[4] << " "
+		    << extent[5]);
+    return;
+  }
   
 
-  if (!this->GetRenderWindowInteractor())
+  if (!this->GetRenderWindow() || !this->GetRenderWindowInteractor())
   {
     return;
   }
@@ -405,7 +453,7 @@ void vtkViewImage3D::SetImage ( vtkImageData* image )
       mapper3D->SetPreferredMethodToFragmentProgram();
       if ( !mapper3D->IsRenderSupported ( this->VolumeProperty ) )
       {
-        vtkWarningMacro (<<"Warning: 3D Texture volume rendering is not supported by your hardware, I switch to 2D Texture rendering."<<endl);
+        vtkWarningMacro (<<"Warning: 3D texture volume rendering is not supported by your hardware, switching to 2D texture rendering."<<endl);
 
 	vtkVolumeTextureMapper2D* newMapper = vtkVolumeTextureMapper2D::New();
         newMapper->CroppingOn();
@@ -469,6 +517,7 @@ void vtkViewImage3D::SetImage ( vtkImageData* image )
   this->BoxWidget->SetInput (this->GetImage());
   this->BoxWidget->PlaceWidget();
   this->Callback->Execute (this->BoxWidget, 0, NULL);
+
   
   if( this->RenderingMode==VOLUME_RENDERING && this->Visibility && this->BoxWidgetVisibility)
   {
@@ -719,12 +768,13 @@ void vtkViewImage3D::UpdatePosition ()
     imCoor[0] = (int)(vtkrint ( ( currentPoint[0]-origin[0] )/spacing[0] ));
     imCoor[1] = (int)(vtkrint ( ( currentPoint[1]-origin[1] )/spacing[1] ));
     imCoor[2] = (int)(vtkrint ( ( currentPoint[2]-origin[2] )/spacing[2] ));
+
     
-    if( imCoor[0]<0 ) imCoor[0]=0;
+    if( imCoor[0]<dims[0] ) imCoor[0]=dims[0];
     if( imCoor[0]>dims[1] ) imCoor[0]=dims[1];
-    if( imCoor[1]<0 ) imCoor[1]=0;
+    if( imCoor[1]<dims[2] ) imCoor[1]=dims[2];
     if( imCoor[1]>dims[3] ) imCoor[1]=dims[3];
-    if( imCoor[2]<0 ) imCoor[2]=0;
+    if( imCoor[2]<dims[4] ) imCoor[2]=dims[4];
     if( imCoor[2]>dims[5] ) imCoor[2]=dims[5];
 
    
@@ -735,9 +785,9 @@ void vtkViewImage3D::UpdatePosition ()
     }
     
     
-    this->ActorCoronal->SetDisplayExtent(0, dims[1], imCoor[1], imCoor[1], 0, dims[5]);
-    this->ActorSagittal->SetDisplayExtent(imCoor[0], imCoor[0], 0, dims[3], 0, dims[5]);
-    this->ActorAxial->SetDisplayExtent(0, dims[1], 0, dims[3], imCoor[2], imCoor[2]);
+    this->ActorCoronal->SetDisplayExtent  (dims[0],   dims[1],   imCoor[1], imCoor[1], dims[4],   dims[5]);
+    this->ActorSagittal->SetDisplayExtent (imCoor[0], imCoor[0], dims[2],   dims[3],   dims[4],   dims[5]);
+    this->ActorAxial->SetDisplayExtent    (dims[0],   dims[1],   dims[2],   dims[3],   imCoor[2], imCoor[2]);
     
     
     this->Axes->SetOrigin(ppoint[0], ppoint[1], ppoint[2]);
@@ -749,7 +799,7 @@ void vtkViewImage3D::UpdatePosition ()
 
 void vtkViewImage3D::SetRenderingMode (int mode)
 {
-  
+
   switch(mode)
   {
       case VOLUME_RENDERING :
@@ -784,9 +834,10 @@ void vtkViewImage3D::SetRenderingMode (int mode)
         this->RenderingMode = PLANAR_RENDERING;
 
         this->VolumeActor->SetVisibility (0);
-        this->AxesActor->SetVisibility (0);
+        this->AxesActor->SetVisibility (this->Visibility && this->AxesVisibility);
         this->BoxWidget->Off();
-        
+
+
         this->ActorSagittal->SetVisibility (this->Visibility && this->ShowSagittal);
         this->ActorCoronal->SetVisibility (this->Visibility && this->ShowCoronal);
         this->ActorAxial->SetVisibility (this->Visibility && this->ShowAxial);

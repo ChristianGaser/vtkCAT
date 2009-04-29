@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkBoxCutPolyLines.h 608 2008-01-14 08:21:23Z filus $
+Module:    $Id: vtkBoxCutPolyLines.h 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-01-14 09:21:23 +0100 (Mo, 14 Jan 2008) $
-Version:   $Revision: 608 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,6 +15,7 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtk_BoxCutPolyLines_h_
 #define _vtk_BoxCutPolyLines_h_
 

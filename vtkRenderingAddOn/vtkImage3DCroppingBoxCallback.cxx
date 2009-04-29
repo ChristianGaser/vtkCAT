@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkImage3DCroppingBoxCallback.cxx 477 2007-11-20 17:46:10Z filus $
+Module:    $Id: vtkImage3DCroppingBoxCallback.cxx 1133 2009-03-18 17:37:24Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2007-11-20 18:46:10 +0100 (Di, 20 Nov 2007) $
-Version:   $Revision: 477 $
+Date:      $Date: 2009-03-18 18:37:24 +0100 (Mi, 18 MÃ¤r 2009) $
+Version:   $Revision: 1133 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkImage3DCroppingBoxCallback.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkImage3DCroppingBoxCallback.h>
 
 #include <vtkBoxWidget.h>
 #include <vtkPolyData.h>
@@ -29,7 +30,7 @@ void vtkImage3DCroppingBoxCallback::Execute ( vtkObject *caller, unsigned long, 
   }
   
   // get the box widget
-  vtkBoxWidget *widget = reinterpret_cast<vtkBoxWidget*>(caller);
+  vtkBoxWidget *widget = vtkBoxWidget::SafeDownCast( caller );
 
   if( !widget )
   {

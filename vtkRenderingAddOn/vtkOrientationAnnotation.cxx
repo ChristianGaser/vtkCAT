@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkOrientationAnnotation.cxx 477 2007-11-20 17:46:10Z filus $
+Module:    $Id: vtkOrientationAnnotation.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2007-11-20 18:46:10 +0100 (Di, 20 Nov 2007) $
-Version:   $Revision: 477 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,14 +15,15 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkOrientationAnnotation.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
 #include "vtkObjectFactory.h"
 #include "vtkTextProperty.h"
 #include "vtkTextMapper.h"
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkOrientationAnnotation);
-vtkCxxRevisionMacro(vtkOrientationAnnotation, "$Revision: 477 $");
+vtkCxxRevisionMacro(vtkOrientationAnnotation, "$Revision: 1080 $");
 
 //----------------------------------------------------------------------------
 vtkOrientationAnnotation::vtkOrientationAnnotation()

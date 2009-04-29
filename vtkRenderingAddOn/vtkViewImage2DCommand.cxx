@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DCommand.cxx 880 2008-06-06 16:10:57Z filus $
+Module:    $Id: vtkViewImage2DCommand.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-06-06 18:10:57 +0200 (Fr, 06 Jun 2008) $
-Version:   $Revision: 880 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,12 +15,13 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifdef _MSC_VER
 #  pragma warning (disable : 4018) 
 #endif
 
-#include "vtkViewImage2D.h"
-#include "vtkInteractorStyleImage2D.h"
+#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
 #include "vtkAbstractPropPicker.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
@@ -28,7 +29,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkImageData.h"
 #include <string.h> 
 
-#include "vtkViewImage2DCommand.h"
+#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
 
 
 vtkViewImage2DCommand::vtkViewImage2DCommand() :

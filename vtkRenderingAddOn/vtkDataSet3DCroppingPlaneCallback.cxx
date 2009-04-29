@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkDataSet3DCroppingPlaneCallback.cxx 744 2008-03-11 09:13:02Z ntoussaint $
+Module:    $Id: vtkDataSet3DCroppingPlaneCallback.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2008-03-11 10:13:02 +0100 (Di, 11 Mär 2008) $
-Version:   $Revision: 744 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkDataSet3DCroppingPlaneCallback.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkDataSet3DCroppingPlaneCallback.h>
 
 #include <vtkPlaneWidget.h>
 #include <vtkDataSet.h>

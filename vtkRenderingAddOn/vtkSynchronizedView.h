@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkSynchronizedView.h 833 2008-05-15 12:17:31Z ntoussaint $
+Module:    $Id: vtkSynchronizedView.h 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2008-05-15 14:17:31 +0200 (Do, 15 Mai 2008) $
-Version:   $Revision: 833 $
+Author:    $Author: filus $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,6 +15,7 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtkSynchronizedView_h_
 #define _vtkSynchronizedView_h_
 
@@ -35,7 +36,7 @@ class vtkRenderer;
 class vtkRenderWindow;
 class vtkRenderWindowInteractor;
 
-class vtkInteractorStyle;
+//class vtkInteractorStyle;
 class vtkOrientationAnnotation;
 
 class vtkImageData;
@@ -120,11 +121,11 @@ class VTK_RENDERINGADDON_EXPORT vtkSynchronizedView : public vtkObject
   
 
   /** Specify the interactor style */
-  void SetInteractorStyle(vtkInteractorStyle*);
+  //void SetInteractorStyle(vtkInteractorStyle*);
 
   
   /** Get the interactor style */
-  vtkGetObjectMacro (InteractorStyle, vtkInteractorStyle);
+  //vtkGetObjectMacro (InteractorStyle, vtkInteractorStyle);
 
   
   /** Set the background color. Format is RGB, 0 <= R,G,B <=1
@@ -312,7 +313,7 @@ class VTK_RENDERINGADDON_EXPORT vtkSynchronizedView : public vtkObject
   vtkRenderer*                    Renderer;
   vtkRenderWindowInteractor*      RenderWindowInteractor;
   
-  vtkInteractorStyle*             InteractorStyle;
+  //vtkInteractorStyle*             InteractorStyle;
   vtkCornerAnnotation*            CornerAnnotation;
   vtkOrientationAnnotation*       OrientationAnnotation;
 

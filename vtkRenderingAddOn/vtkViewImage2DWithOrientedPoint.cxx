@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithOrientedPoint.cxx 631 2008-01-27 17:34:57Z filus $
+Module:    $Id: vtkViewImage2DWithOrientedPoint.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-01-27 18:34:57 +0100 (So, 27 Jan 2008) $
-Version:   $Revision: 631 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,15 +15,16 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage2DWithOrientedPoint.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage2DWithOrientedPoint.h>
 
 #include "vtkImageData.h"
 #include "vtkLookupTable.h"
-#include "vtkImageOrientedPointWidgetCallback.h"
-#include "vtkImageOrientedPointWidget.h"
+#include <vtkRenderingAddOn/vtkImageOrientedPointWidgetCallback.h>
+#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
 
 #include "vtkImageActor.h"
-#include "vtkFillImageWithPolyData.h"
+#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
 #include "vtkGlyphSource2D.h"
 #include "vtkMapper.h"
 #include "vtkInteractorObserver.h"
@@ -35,7 +36,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 #include <vtkObjectFactory.h>
 
-vtkCxxRevisionMacro(vtkViewImage2DWithOrientedPoint, "$Revision: 631 $");
+vtkCxxRevisionMacro(vtkViewImage2DWithOrientedPoint, "$Revision: 1080 $");
 vtkStandardNewMacro(vtkViewImage2DWithOrientedPoint);
 
 

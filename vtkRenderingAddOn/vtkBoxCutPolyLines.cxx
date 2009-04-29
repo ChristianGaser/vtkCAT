@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkBoxCutPolyLines.cxx 556 2007-12-17 07:45:13Z tmansi $
+Module:    $Id: vtkBoxCutPolyLines.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: tmansi $
-Date:      $Date: 2007-12-17 08:45:13 +0100 (Mo, 17 Dez 2007) $
-Version:   $Revision: 556 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkBoxCutPolyLines.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkBoxCutPolyLines.h>
 
 #include <vtkPointData.h>
 #include <vtkPolyData.h>
@@ -24,7 +25,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkInformation.h>
 #include <vtkCellArray.h>
 
-vtkCxxRevisionMacro(vtkBoxCutPolyLines, "$Revision: 556 $");
+vtkCxxRevisionMacro(vtkBoxCutPolyLines, "$Revision: 1080 $");
 vtkStandardNewMacro(vtkBoxCutPolyLines);
 
 vtkBoxCutPolyLines::vtkBoxCutPolyLines()

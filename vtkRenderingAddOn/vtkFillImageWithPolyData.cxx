@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkFillImageWithPolyData.cxx 477 2007-11-20 17:46:10Z filus $
+Module:    $Id: vtkFillImageWithPolyData.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2007-11-20 18:46:10 +0100 (Di, 20 Nov 2007) $
-Version:   $Revision: 477 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkFillImageWithPolyData.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
 
 #include "vtkImageData.h"
 #include "vtkInformation.h"
@@ -29,7 +30,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 extern int vtkrint(double a);
 
-vtkCxxRevisionMacro (vtkFillImageWithPolyData, "$Revision: 477 $");
+vtkCxxRevisionMacro (vtkFillImageWithPolyData, "$Revision: 1080 $");
 vtkStandardNewMacro (vtkFillImageWithPolyData);
 
 

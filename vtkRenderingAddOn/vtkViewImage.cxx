@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage.cxx 931 2008-09-08 13:46:38Z filus $
+Module:    $Id: vtkViewImage.cxx 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-09-08 15:46:38 +0200 (Mo, 08 Sep 2008) $
-Version:   $Revision: 931 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage.h>
 
 #include "vtkObjectFactory.h"
 
@@ -64,7 +65,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 extern int vtkrint(double a);
 
-vtkCxxRevisionMacro(vtkViewImage, "$Revision: 931 $");
+vtkCxxRevisionMacro(vtkViewImage, "$Revision: 1137 $");
 vtkStandardNewMacro(vtkViewImage);
 
 
@@ -103,6 +104,15 @@ vtkViewImage::vtkViewImage()
   //this->ScalarBar->GetPositionCoordinate()->SetValue ( 0.1, 0.01);
   this->ScalarBar->VisibilityOff();
     
+  vtkLookupTable* bwLut = vtkLookupTable::New();
+  bwLut->SetTableRange (0, 1);
+  bwLut->SetSaturationRange (0, 0);
+  bwLut->SetHueRange (0, 0);
+  bwLut->SetValueRange (0, 1);
+  bwLut->Build();
+  this->SetLookupTable (bwLut);
+  bwLut->Delete();
+
   this->CurrentPoint[0] = 0.0;
   this->CurrentPoint[1] = 0.0;
   this->CurrentPoint[2] = 0.0;
@@ -113,8 +123,8 @@ vtkViewImage::vtkViewImage()
   this->WindowLevelPercentage = 0.1;
 
   // Increase polygon offsets to support some OpenGL drivers
-  vtkMapper::SetResolveCoincidentTopologyToPolygonOffset();
-  vtkMapper::SetResolveCoincidentTopologyPolygonOffsetParameters(10,10);
+  //vtkMapper::SetResolveCoincidentTopologyToPolygonOffset();
+  //vtkMapper::SetResolveCoincidentTopologyPolygonOffsetParameters(10,10);
 
 #ifdef vtkINRIA3D_USE_ITK
   this->ImageConverter = 0;
@@ -159,21 +169,16 @@ void vtkViewImage::SetImage (vtkImageData* image)
 void vtkViewImage::Initialize()
 {
   vtkSynchronizedView::Initialize();
-  
-  vtkLookupTable* bwLut = vtkLookupTable::New();
-  bwLut->SetTableRange (0, 1);
-  bwLut->SetSaturationRange (0, 0);
-  bwLut->SetHueRange (0, 0);
-  bwLut->SetValueRange (0, 1);
-  bwLut->Build();
-
-  this->SetLookupTable (bwLut);
+  this->SetLookupTable( this->GetLookupTable() );
   this->AddActor (this->ScalarBar);
-
-  bwLut->Delete();
-
 }
 
+
+void vtkViewImage::Uninitialize()
+{
+  this->RemoveActor (this->ScalarBar);
+  vtkSynchronizedView::Uninitialize();
+}
 
 
 void vtkViewImage::RegisterImage(vtkImageData* image)
@@ -371,7 +376,7 @@ void vtkViewImage::SyncSetSlice(unsigned int p_plan, int p_zslice)
     if( view && view->GetLinkPosition())
     {
       view->SyncSetSlice (p_plan, p_zslice);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -398,7 +403,7 @@ void vtkViewImage::SyncSetZSlice(int p_zslice)
     if( view && view->GetLinkPosition())
     {
       view->SyncSetZSlice (p_zslice);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -453,7 +458,7 @@ void vtkViewImage::SyncSetCurrentPoint(const double p_point[3])
     if( view && view->GetLinkPosition())
     {
       view->SyncSetCurrentPoint (p_point);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -525,7 +530,7 @@ void vtkViewImage::SyncResetCurrentPoint()
     if( view && view->GetLinkPosition() )
     {
       view->SyncResetCurrentPoint ();
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }          
@@ -592,7 +597,7 @@ void vtkViewImage::SyncSetWindow (double w)
     if( view && view->GetLinkWindowLevel() )
     {
       view->SyncSetWindow (w);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }          
@@ -625,7 +630,7 @@ void vtkViewImage::SyncSetLevel (double l)
     if( view && view->GetLinkWindowLevel() )
     {
       view->SyncSetLevel (l);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -667,7 +672,7 @@ void vtkViewImage::SyncResetWindowLevel()
     if( view && view->GetLinkWindowLevel() )
     {
       view->SyncResetWindowLevel ();
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }          
@@ -1181,7 +1186,7 @@ void vtkViewImage::SyncSetZoom (double factor)
     if( view && view->GetLinkZoom() )
     {
         view->SyncSetZoom (factor);
-        if( !view->GetRenderWindow()->GetNeverRendered() )
+        if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
         {
           view->Render();
         }
@@ -1212,7 +1217,7 @@ void vtkViewImage::SyncSetLookupTable (vtkScalarsToColors* lut)
     if( view )
     {
       view->SyncSetLookupTable (lut);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -1317,7 +1322,7 @@ void vtkViewImage::SyncSetMaskImage (vtkImageData* mask, vtkLookupTable* lut)
     if( view )
     {
       view->SyncSetMaskImage (mask, lut);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }
@@ -1347,7 +1352,7 @@ void vtkViewImage::SyncSetOverlappingImage (vtkImageData* image)
     if( view )
     {
       view->SyncSetOverlappingImage (image);
-      if( !view->GetRenderWindow()->GetNeverRendered() )
+      if( view->GetRenderWindow() && !view->GetRenderWindow()->GetNeverRendered() )
       {
         view->Render();
       }

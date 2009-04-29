@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2D.h 629 2008-01-25 15:08:17Z filus $
+Module:    $Id: vtkViewImage2D.h 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-01-25 16:08:17 +0100 (Fr, 25 Jan 2008) $
-Version:   $Revision: 629 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,13 +15,14 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtkViewImage2D_h_
 #define _vtkViewImage2D_h_
 
 #include "vtkINRIA3DConfigure.h"
 
 #include <iostream>
-#include "vtkViewImage.h"
+#include <vtkRenderingAddOn/vtkViewImage.h>
 
 class vtkImageActor;
 class vtkProp;
@@ -107,6 +108,9 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage2D : public vtkViewImage
 	 window/level.
   */
   virtual void Update();
+
+
+  virtual void Uninitialize();
 
   /**
      This function is called right after setting both Renderer and RenderWindow.
@@ -329,7 +333,29 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage2D : public vtkViewImage
 
   /** Synchronized version of SetCameraFocalAndPosition. */
   void SyncSetCameraFocalAndPosition (double focal[3], double pos[3]);
-  
+
+  /** Add an imagebackground image. You can apply to the image actor a transformation transform, and choose a slice if it is a volume. */
+  void SetBG(vtkImageData* image, int slice = 0, vtkTransform* transform = NULL);
+
+  /** Remove the background image (if any). */
+  void RemoveBGImage (void);
+
+  /** Set the opacity of the background Actor */
+  void SetBGOpacity(double opacity);
+
+  /** Set the opacity of the principale ImageActor */
+   void SetOpacity(double opacity);
+
+  /** Return the vtkImageActor of the background image. */
+  vtkGetObjectMacro (BGActor, vtkImageActor);
+
+  /** Return the vtkImageData of the background image. */
+  vtkGetObjectMacro (BGImage, vtkImageData);
+
+/** A complete reset: a classical reset and also cancel all the transformations*/
+  void Clear(void);
+
+  vtkGetMacro (FirstImage, int);
   
  protected:
   vtkViewImage2D();
@@ -351,6 +377,8 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage2D : public vtkViewImage
      objects in the scene so that everything becomes visible. Internal use only.
    */
   void ResetAndRestablishZoomAndCamera (void);
+
+
 
   
  private:
@@ -415,12 +443,16 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage2D : public vtkViewImage
   unsigned int WheelInteractionStyle;
 
 
-  double       InitialParallelScale;
-  
+  double       InitialParallelScale;  
 
   unsigned int Conventions;
 
   int          FirstImage;
+
+/// background image 
+  vtkImageData*                  BGImage;
+  vtkImageActor *                BGActor;
+  vtkImageMapToColors*           BGWindowLevel;
   
 };
 

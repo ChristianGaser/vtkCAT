@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DFullCommand.cxx 880 2008-06-06 16:10:57Z filus $
+Module:    $Id: vtkViewImage2DFullCommand.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-06-06 18:10:57 +0200 (Fr, 06 Jun 2008) $
-Version:   $Revision: 880 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,9 +15,10 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage2DFullCommand.h"
-#include "vtkViewImage2D.h"
-#include "vtkInteractorStyleImage2D.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage2DFullCommand.h>
+#include <vtkRenderingAddOn/vtkViewImage2D.h>
+#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 
@@ -79,7 +80,7 @@ void vtkViewImage2DFullCommand::Execute(vtkObject*    caller,
         case 'o':
         case 'O':
           orientation = this->IV->GetOrientation();
-          orientation = (++orientation)%3;
+          orientation = (orientation+1)%3;
           this->IV->SetOrientation(orientation);
           this->IV->Render();
           return;

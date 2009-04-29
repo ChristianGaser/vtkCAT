@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkSynchronizedView.cxx 917 2008-08-27 10:37:34Z filus $
+Module:    $Id: vtkSynchronizedView.cxx 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-08-27 12:37:34 +0200 (Mi, 27 Aug 2008) $
-Version:   $Revision: 917 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,11 +15,11 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkSynchronizedView.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkSynchronizedView.h>
 
 #include "vtkObjectFactory.h"
 #include "vtkInteractorObserver.h"
-#include "vtkInteractorStyleSwitch.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
@@ -30,7 +30,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkProperty.h"
 #include "vtkProperty2D.h"
 #include "vtkTextProperty.h"
-#include "vtkOrientationAnnotation.h"
+#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
 
 #include "assert.h"
 #include <algorithm>
@@ -52,7 +52,7 @@ int VTK_RENDERINGADDON_EXPORT vtkrint(double a)
 }
 
 
-vtkCxxRevisionMacro(vtkSynchronizedView, "$Revision: 917 $");
+vtkCxxRevisionMacro(vtkSynchronizedView, "$Revision: 1137 $");
 vtkStandardNewMacro(vtkSynchronizedView);
 
 
@@ -67,6 +67,7 @@ vtkSynchronizedView::vtkSynchronizedView()
   this->Renderer               = 0;
   this->RenderWindow           = 0;
   this->RenderWindowInteractor = 0;
+  //this->InteractorStyle        = 0;
 
   // Initilize Annotations
   this->CornerAnnotation = vtkCornerAnnotation::New();
@@ -78,8 +79,6 @@ vtkSynchronizedView::vtkSynchronizedView()
   this->OrientationAnnotation = vtkOrientationAnnotation::New();
   this->OrientationAnnotation->SetNonlinearFontScaleFactor (0.25);
 
-  this->InteractorStyle = vtkInteractorStyleSwitch::New();
-
   this->Parent = 0;
 
   this->LinkRender = true;
@@ -89,48 +88,45 @@ vtkSynchronizedView::vtkSynchronizedView()
 
 
 vtkSynchronizedView::~vtkSynchronizedView()
-{
-  //this->RemoveAllViewToObserve();
-    
-  //this->Uninitialize();
-
-  if (this->GetRenderer())
-    {
-      this->GetRenderer()->RemoveAllViewProps();
-    }
-
+{	
   this->TextProperty->Delete();
   this->CornerAnnotation->Delete();
   this->OrientationAnnotation->Delete();
 
-  if( this->InteractorStyle )
-    this->InteractorStyle->Delete();
-
   if( this->RenderWindow )
+  {
     this->RenderWindow->Delete();
+	this->RenderWindow = 0;
+  }
+
 
   if( this->Renderer )
+  {
     this->Renderer->Delete();
+	this->Renderer = 0;
+  }
 
   if( this->RenderWindowInteractor )
+  {
     this->RenderWindowInteractor->Delete();
+	this->RenderWindowInteractor = 0;
+  }
+
+  /*
+  if( this->InteractorStyle )
+  {
+    this->InteractorStyle->Delete();
+	this->InteractorStyle = 0;
+  }*/
+
+  
+
 }
 
 
 //----------------------------------------------------------------------------
 void vtkSynchronizedView::SetRenderWindow(vtkRenderWindow *arg)
 {
-  if (!arg)
-  {
-    this->Uninitialize();
-    if (this->RenderWindow)
-    {
-      this->RenderWindow->UnRegister(this);
-    }
-    this->RenderWindow = NULL;
-    return;
-  }
-  
   if (this->RenderWindow == arg)
   {
     return;
@@ -150,29 +146,16 @@ void vtkSynchronizedView::SetRenderWindow(vtkRenderWindow *arg)
     this->RenderWindow->Register(this);
   }
 
-
-  if (this->RenderWindow->GetInteractor())
+  if (this->RenderWindow && this->RenderWindow->GetInteractor())
   {
     this->SetInteractor (this->RenderWindow->GetInteractor());
   }
-    
   this->Initialize();
 }
 
 //----------------------------------------------------------------------------
 void vtkSynchronizedView::SetRenderer(vtkRenderer *arg)
 {
-  if (!arg)
-  {
-    this->Uninitialize();
-    if (this->Renderer)
-    {
-      this->Renderer->UnRegister(this);
-    }
-    this->Renderer = NULL;
-    return;
-  }
-  
   if (this->Renderer == arg)
   {
     return;
@@ -221,15 +204,16 @@ void vtkSynchronizedView::SetInteractor(vtkRenderWindowInteractor *arg)
   this->Initialize();
 }
 
-
-void
-vtkSynchronizedView::SetInteractorStyle(vtkInteractorStyle* style)
+/*
+void vtkSynchronizedView::SetInteractorStyle(vtkInteractorStyle* style)
 {
-  
+ 
   if (this->InteractorStyle == style)
   {
     return;
   }
+
+  this->Uninitialize();
 
   if (this->InteractorStyle)
   {
@@ -238,15 +222,22 @@ vtkSynchronizedView::SetInteractorStyle(vtkInteractorStyle* style)
   
   this->InteractorStyle = style;
   
+  
   if (this->InteractorStyle)
   {
     this->InteractorStyle->Register(this);
   }
 
-  this->Modified();
-  this->SetInteraction();
-  
+  this->Initialize();
+
+	this->Uninitialize();
+	this->InteractorStyle = style;
+	this->Initialize();
+
+  //this->SetInteraction();
+  //this->Modified();
 }
+*/
 
 
 //----------------------------------------------------------------------------
@@ -255,6 +246,8 @@ void vtkSynchronizedView::Initialize()
   if (this->Renderer)
   {
     this->Renderer->SetBackground(0.9,0.9,0.9);
+	this->Renderer->AddViewProp ( this->CornerAnnotation );
+	this->Renderer->AddViewProp ( this->OrientationAnnotation );
   }
   
   if (this->RenderWindow && this->Renderer)
@@ -262,16 +255,16 @@ void vtkSynchronizedView::Initialize()
     this->RenderWindow->AddRenderer(this->Renderer);  
   }
 
-  this->AddActor ( this->CornerAnnotation );
-  this->AddActor ( this->OrientationAnnotation );
-
-  if (this->RenderWindowInteractor && this->InteractorStyle)
-  {
-    this->RenderWindowInteractor->SetInteractorStyle(this->InteractorStyle);
+  if (this->RenderWindowInteractor )
+  {/*
+	  if ( this->InteractorStyle )
+	  {
+		this->RenderWindowInteractor->SetInteractorStyle( this->InteractorStyle );
+		this->SetInteraction();
+	  }
+   */
     this->RenderWindowInteractor->SetRenderWindow(this->RenderWindow);
   }
-  
-  this->SetInteraction();
 }
 
 //----------------------------------------------------------------------------
@@ -279,19 +272,20 @@ void vtkSynchronizedView::Uninitialize()
 {
   if (this->Renderer)
   {
-    this->Renderer->RemoveAllViewProps();
+    this->Renderer->RemoveViewProp( this->CornerAnnotation );
+	this->Renderer->RemoveViewProp( this->OrientationAnnotation );
   }
   
   if (this->RenderWindow && this->Renderer)
   {
     this->RenderWindow->RemoveRenderer(this->Renderer);
   }
-  
+  /*
   if (this->RenderWindowInteractor)
   {
-    this->RenderWindowInteractor->SetInteractorStyle(NULL);
-    this->RenderWindowInteractor->SetRenderWindow(NULL);
-  }
+    //this->RenderWindowInteractor->SetInteractorStyle(NULL);
+    //this->RenderWindowInteractor->SetRenderWindow(NULL); // never!
+  }*/
 }
 
 
@@ -336,19 +330,16 @@ vtkSynchronizedView::SetInteractionOn()
 void
 vtkSynchronizedView::SetInteraction()
 {
-  if (this->RenderWindowInteractor)
+	if ( this->GetRenderWindowInteractor() && this->GetRenderWindowInteractor()->GetInteractorStyle() )
   {
-    if (!this->GetInteractionOn())
-    {
-      this->GetRenderWindowInteractor()->SetInteractorStyle(NULL);
-    }
-    else
-    {
-      if( this->GetInteractorStyle() )
-      {
-        this->GetRenderWindowInteractor()->SetInteractorStyle( this->InteractorStyle );
-      }      
-    }
+	  if ( !this->GetInteractionOn() )
+	  {
+		  this->GetRenderWindowInteractor()->GetInteractorStyle()->SetEnabled(0);
+	  }
+	  else
+	  {
+	      this->GetRenderWindowInteractor()->GetInteractorStyle()->SetEnabled(1);
+	  }
   }
 }
 
@@ -660,7 +651,7 @@ void vtkSynchronizedView::SyncRender()
   for( unsigned int i=0; i<this->Children.size(); i++)
   {
 //     vtkSynchronizedView* view = reinterpret_cast<vtkSynchronizedView*> ( this->Children[i] );
-    vtkSynchronizedView* view = vtkSynchronizedView::SafeDownCast(this->Children[i]);
+    vtkSynchronizedView* view = this->Children[i];
     if( view && view->GetLinkRender())
     {
       view->SyncRender ();
@@ -713,22 +704,31 @@ vtkSynchronizedView* vtkSynchronizedView::GetParent() const
 void vtkSynchronizedView::AddChild (vtkSynchronizedView* child)
 {
 
-  if( this->HasChild(child) || child==this )
+  if( this->HasChild(child) ) // nothing to do
   {
     return;
   }
+
+  if ( child==this ) // someone wants to add itself as a child to itself
+  {
+    // remove the child from its parent as apparently it doesn't want it anymore
+    vtkSynchronizedView* parent = child->GetParent();
+    if( parent )
+    {
+      parent->RemoveChild (child);
+    }
+    // but do nothing more
+    return;
+  }
+
   
   if( child )
   {
-
     /**
-       We store temporary the child's parent
+       We temporary store the child's parent
      */
     vtkSynchronizedView* parent = child->GetParent();
-    
     child->Register  (this);
-    child->SetParent (this);
-    this->Children.push_back (child);
 
     /**
        Now that the child has changed its parent, we remove
@@ -741,7 +741,10 @@ void vtkSynchronizedView::AddChild (vtkSynchronizedView* child)
     {
       parent->RemoveChild (child);
     }
+
     
+    child->SetParent (this);
+    this->Children.push_back (child);
   }
   
 }
@@ -765,24 +768,7 @@ void vtkSynchronizedView::RemoveChild (vtkSynchronizedView* view)
   {
     return;
   }
-/*
-  std::vector<vtkSynchronizedView*> auxList;
 
-  for( unsigned int i=0; i<this->Children.size(); i++)
-  {
-	if( this->Children[i]==view )
-	{
-		this->Children[i]->UnRegister(this);
-	}
-	else
-	{
-		auxList.push_back(this->Children[i]);
-	}
-  }
-
-  this->Children = auxList;
-  */
-  
   std::vector<vtkSynchronizedView*>::iterator it =
     std::find (this->Children.begin(), this->Children.end(), view);
 
@@ -791,11 +777,9 @@ void vtkSynchronizedView::RemoveChild (vtkSynchronizedView* view)
     return;
   }
   
-  
+  (*it)->SetParent (0);
   (*it)->UnRegister (this);
-  this->Children.erase (it);
-  
-  
+  this->Children.erase (it);  
 }
 
 
@@ -804,6 +788,7 @@ void vtkSynchronizedView::RemoveAllChildren()
 
   for( unsigned int i=0; i<this->Children.size(); i++)
   {
+	this->Children[i]->SetParent( 0 );
     this->Children[i]->UnRegister (this);
   }
 
@@ -814,16 +799,29 @@ void vtkSynchronizedView::RemoveAllChildren()
 
 void vtkSynchronizedView::Detach (void)
 {
-
-  if( this->GetParent() )
+  
+  vtkSynchronizedView* parent = this->GetParent();
+  if( parent )
   {
-    this->GetParent()->AddChildren ( this->Children );
-    this->GetParent()->RemoveChild (this);
-    this->Parent = 0;
+    parent->AddChildren ( this->Children );
+    parent->RemoveChild ( this );
+    
+    /**
+       Handle the case where the parent's parent of the view is the view itself.
+       Tell the it that it no longer has a parent, life is sad...
+    */
+    ;
+    if( parent->GetParent()==this )
+    {
+      parent->SetParent(0);
+      parent->UnRegister(this);
+    }
+    
   }
-
-  this->RemoveAllChildren(); // surely not useful because the call to AddChildren already removed
-                             // the children of this view
+  else
+  {
+    this->RemoveAllChildren(); 
+  }
   
 }
 

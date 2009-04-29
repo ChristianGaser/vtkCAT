@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkImageOrientedPointWidget.cxx 531 2007-12-11 13:47:53Z ntoussaint $
+Module:    $Id: vtkImageOrientedPointWidget.cxx 1080 2009-02-18 13:27:02Z acanale $
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2007-12-11 14:47:53 +0100 (Di, 11 Dez 2007) $
-Version:   $Revision: 531 $
+Author:    $Author: acanale $
+Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
+Version:   $Revision: 1080 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkImageOrientedPointWidget.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkImageOrientedPointWidget.h>
 
 #include "vtkAbstractPicker.h"
 #include "vtkActor.h"
@@ -40,7 +41,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkTransformPolyDataFilter.h"
 #include "vtkTransform.h"
 
-vtkCxxRevisionMacro(vtkImageOrientedPointWidget, "$Revision: 531 $");
+vtkCxxRevisionMacro(vtkImageOrientedPointWidget, "$Revision: 1080 $");
 vtkStandardNewMacro(vtkImageOrientedPointWidget);
 
 vtkCxxSetObjectMacro(vtkImageOrientedPointWidget, HandleProperty1, vtkProperty);

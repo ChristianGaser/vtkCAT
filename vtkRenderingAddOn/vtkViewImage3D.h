@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage3D.h 778 2008-04-09 08:00:29Z ntoussaint $
+Module:    $Id: vtkViewImage3D.h 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2008-04-09 10:00:29 +0200 (Mi, 09 Apr 2008) $
-Version:   $Revision: 778 $
+Author:    $Author: filus $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,13 +15,14 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtkViewImage3D_h_
 #define _vtkViewImage3D_h_
 
 #include "vtkINRIA3DConfigure.h"
 
 #include <vector>
-#include <vtkViewImage.h>
+#include <vtkRenderingAddOn/vtkViewImage.h>
 #include <vtkRenderer.h>
 #include <vtkImageMapToWindowLevelColors.h>
 #include <vtkImageMapToColors.h>
@@ -33,7 +34,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkVolumeRayCastMIPFunction.h>
 #include <vtkVolumeRayCastIsosurfaceFunction.h>
 #include <vtkVolumeProperty.h>
-#include "vtkImage3DCroppingBoxCallback.h"
+#include <vtkRenderingAddOn/vtkImage3DCroppingBoxCallback.h>
 #include <vtkObjectFactory.h>
 
 class vtkImageData;
@@ -91,8 +92,6 @@ public:
   //ETX
   
 
-  virtual void SetInteractor (vtkRenderWindowInteractor*);
-  
   /** In some cases, we would like to call some cleaning
       functions before going into the unregister vtk stuff.*/
   virtual void PrepareForDelete (void);
@@ -100,6 +99,10 @@ public:
 
   /** Update the display parameters based on the data information. */
   virtual void Update(){};
+
+
+  virtual void Initialize();
+  virtual void Uninitialize();
 
 
   virtual void PrintSelf(ostream& os, vtkIndent indent);

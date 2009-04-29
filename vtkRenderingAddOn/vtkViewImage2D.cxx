@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2D.cxx 752 2008-03-11 16:32:52Z filus $
+Module:    $Id: vtkViewImage2D.cxx 1139 2009-04-06 09:26:29Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-03-11 17:32:52 +0100 (Di, 11 Mär 2008) $
-Version:   $Revision: 752 $
+Date:      $Date: 2009-04-06 11:26:29 +0200 (Mo, 06 Apr 2009) $
+Version:   $Revision: 1139 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,7 +15,8 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage2D.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage2D.h>
 
 #include "vtkInteractorObserver.h"
 #include "vtkInteractorStyleSwitch.h"
@@ -32,16 +33,16 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkCornerAnnotation.h>
 #include <vtkLightCollection.h>
 #include <vtkLight.h>
-#include "vtkOrientationAnnotation.h"
+#include <vtkRenderingAddOn/vtkOrientationAnnotation.h>
 
 #include "assert.h"
 #include <iostream>
 #include <sstream>
 #include <cmath>
 
-#include "vtkViewImage2DCommand.h"
-#include "vtkViewImage2DFullCommand.h"
-#include "vtkInteractorStyleImage2D.h"
+#include <vtkRenderingAddOn/vtkViewImage2DCommand.h>
+#include <vtkRenderingAddOn/vtkViewImage2DFullCommand.h>
+#include <vtkRenderingAddOn/vtkInteractorStyleImage2D.h>
 #include "vtkCamera.h"
 #include "vtkImageReslice.h"
 #include "vtkRenderWindow.h"
@@ -54,7 +55,7 @@ PURPOSE.  See the above copyright notices for more information.
 #include "vtkPolyDataMapper.h"
 #include "vtkLineSource.h"
 #include "vtkLookupTable.h"
-#include "vtkImageBlendWithMask.h"
+#include <vtkRenderingAddOn/vtkImageBlendWithMask.h>
 #include "vtkImageBlend.h"
 #include <vtkPolyDataMapper2D.h>
 #include <vtkActor2D.h>
@@ -76,12 +77,13 @@ PURPOSE.  See the above copyright notices for more information.
 #include <vtkBox.h>
 #include <vtkPolyDataWriter.h>
 #include <vtkPolyDataNormals.h>
+#include <vtkTransform.h>
 
 
 extern int vtkrint(double a);
 
 
-vtkCxxRevisionMacro(vtkViewImage2D, "$Revision: 752 $");
+vtkCxxRevisionMacro(vtkViewImage2D, "$Revision: 1139 $");
 vtkStandardNewMacro(vtkViewImage2D);
 
 // Initialize static member that controls display convention (0: radiologic, 1: neurologic)
@@ -128,6 +130,14 @@ vtkViewImage2D::vtkViewImage2D()
   this->MaskFilter       = vtkImageBlendWithMask::New();
   this->Blender          = vtkImageBlend::New();
 
+  /*
+  this->BGActor          = vtkImageActor::New();
+  this->BGWindowLevel    = vtkImageMapToColors::New();
+  this->BGImage = vtkImageData::New();
+  */
+  this->BGActor          = 0;
+  this->BGWindowLevel    = 0;
+  this->BGImage = 0;
   
   this->HorizontalLineSource = vtkLineSource::New();
   this->VerticalLineSource   = vtkLineSource::New();
@@ -150,8 +160,10 @@ vtkViewImage2D::vtkViewImage2D()
 
   // set the filters properties
   this->Blender->SetBlendModeToNormal();
-  this->Blender->SetOpacity (0, 0.25);
+  this->Blender->SetOpacity (0,0.25 );
+  //0.25
   this->Blender->SetOpacity (1, 0.75);
+ //0.75
   
   
   // set up the vtk pipeline  
@@ -165,7 +177,8 @@ vtkViewImage2D::vtkViewImage2D()
 
  
   // Interactor Style
-  this->InitInteractorStyle(vtkViewImage2D::SELECT_INTERACTION);
+  this->SetInteractionStyle( vtkViewImage2D::SELECT_INTERACTION );
+  //this->InitInteractorStyle(vtkViewImage2D::SELECT_INTERACTION);
   
   
   // Initialize cursor lines
@@ -176,6 +189,8 @@ vtkViewImage2D::vtkViewImage2D()
   this->HorizontalLineActor->GetProperty()->SetColor (1.0,0.0,0.0);
   mapper->Delete();
   this->HorizontalLineActor->SetVisibility (0);
+  this->HorizontalLineActor->PickableOff();
+ this->HorizontalLineActor->DragableOff();
   
 
   
@@ -185,6 +200,8 @@ vtkViewImage2D::vtkViewImage2D()
   this->VerticalLineActor->GetProperty()->SetColor (1.0,0.0,0.0);
   mapper2->Delete();
   this->VerticalLineActor->SetVisibility (0);
+  this->VerticalLineActor->PickableOff();
+  this->VerticalLineActor->DragableOff();
 
   this->GetCornerAnnotation()->SetWindowLevel ( this->WindowLevelForCorner );
   
@@ -210,6 +227,14 @@ vtkViewImage2D::~vtkViewImage2D()
   this->ImageReslice->Delete();
   this->MaskFilter->Delete();
   this->Blender->Delete();
+    //this->BGActor->Delete();
+    //this->BGWindowLevel->Delete();
+  /*
+  if( this->BGImage )
+  {
+    this->BGImage->Delete();
+  }
+  */
     
   this->HorizontalLineSource->Delete();
   this->HorizontalLineActor->Delete();
@@ -221,6 +246,7 @@ vtkViewImage2D::~vtkViewImage2D()
   this->DataSetCutBox->Delete();
   
 }
+
 
 
 
@@ -242,8 +268,58 @@ void vtkViewImage2D::Initialize()
     this->GetRenderer()->TwoSidedLightingOff();
   }
   
-
+  if( this->GetRenderWindowInteractor() )
+  {
+    vtkInteractorStyleImage2D *interactor = vtkInteractorStyleImage2D::New();
+    interactor->SetView(this);  
+    
+    vtkViewImage2DCommand *cbk = vtkViewImage2DCommand::New();  
+    cbk->SetView(this);
+	
+    interactor->AddObserver(vtkCommand::KeyPressEvent, cbk);
+    interactor->AddObserver(vtkCommand::WindowLevelEvent, cbk);
+    interactor->AddObserver(vtkCommand::StartWindowLevelEvent, cbk);
+    interactor->AddObserver(vtkCommand::ResetWindowLevelEvent, cbk);
+    interactor->AddObserver(vtkCommand::EndWindowLevelEvent, cbk);
+    interactor->AddObserver(vtkCommand::PickEvent, cbk);
+    interactor->AddObserver(vtkCommand::StartPickEvent, cbk);
+    interactor->AddObserver(vtkCommand::EndPickEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::ResetZoomEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::ResetPositionEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::StartZSliceMoveEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::ZSliceMoveEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::EndZSliceMoveEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::StartMeasureEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::MeasureEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::EndMeasureEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::FullPageEvent, cbk);
+    interactor->AddObserver(vtkViewImage2DCommand::ZoomEvent, cbk);
+    
+    this->GetRenderWindowInteractor()->SetInteractorStyle( interactor );
+    
+    interactor->Delete();
+    cbk->Delete();
+  }
+  
 }
+
+
+void vtkViewImage2D::Uninitialize()
+{
+  this->RemoveActor( this->HorizontalLineActor );
+  this->RemoveActor( this->VerticalLineActor );
+  this->RemoveActor( this->ImageActor );
+  for( unsigned int i=0; i<this->DataSetActorList.size(); i++)
+    this->RemoveActor( this->DataSetActorList[i] );
+  
+  if ( this->GetRenderWindowInteractor() )
+  {
+    this->GetRenderWindowInteractor()->SetInteractorStyle( NULL );
+  }
+  
+  vtkViewImage::Uninitialize();
+}
+
 
 
 
@@ -285,26 +361,35 @@ void vtkViewImage2D::InitializeImagePositionAndSize()
   
   if (this->FirstRender)
   {
-    // make sure the input is up-to-date
+    // make sur the input is up-to-date
     this->ImageActor->GetInput()->Update();
 
 
     this->GetRenderer()->GetActiveCamera()->OrthogonalizeViewUp();
     this->GetRenderer()->GetActiveCamera()->ParallelProjectionOn();
 
+    
+    // Get the current position of the camera:
+    //double Pos[3];
+    //this->GetRenderer()->GetActiveCamera()->GetPosition(Pos);	
+
+    
     // Get the bounds of the image: coordinates in the real world
     double bnds[6];
-    this->GetImage()->GetBounds(bnds);
-        
-    // extension of the volume:
+    this->ImageActor->GetBounds(bnds);
+    
+    
+    // extension of the image:
     double xs = (bnds[1] - bnds[0]);
     double ys = (bnds[3] - bnds[2]);
-    double zs = (bnds[5] - bnds[4]);
-
-    double mx = xs < ys ? ys:xs;
-    mx = mx < zs ? mx:zs;
-    this->InitialParallelScale = mx/2.0;
+	
+    double bnds_x = xs/2.0;
+    double bnds_y = ys/2.0;
     
+    //this->GetRenderer()->GetActiveCamera()->SetParallelScale(xs < ys ? bnds_y:bnds_x); 
+    //this->InitialParallelScale = this->GetRenderer()->GetActiveCamera()->GetParallelScale();
+    this->InitialParallelScale = xs < ys ? bnds_y:bnds_x;
+
     /**
        Somehow, when the axes are present, they screw up the ResetZoom
        function because they are taken into account when computing the
@@ -328,7 +413,6 @@ void vtkViewImage2D::InitializeImagePositionAndSize()
 
 void vtkViewImage2D::InitInteractorStyle(unsigned int p_style)
 {
-  
   vtkInteractorStyleImage2D *interactor = vtkInteractorStyleImage2D::New();
   interactor->SetView(this);  
   this->SetInteractionStyle(p_style);
@@ -355,7 +439,7 @@ void vtkViewImage2D::InitInteractorStyle(unsigned int p_style)
   interactor->AddObserver(vtkViewImage2DCommand::FullPageEvent, cbk);
   interactor->AddObserver(vtkViewImage2DCommand::ZoomEvent, cbk);
 
-  this->SetInteractorStyle(interactor);
+  //this->SetInteractorStyle(interactor);
 
   cbk->Delete();
   interactor->Delete();
@@ -468,8 +552,8 @@ void vtkViewImage2D::UpdatePosition ()
 
   this->GetCurrentPoint(pos);
 
-  double *spacing = this->GetImage()->GetSpacing();
-  double *origin  = this->GetImage()->GetOrigin();
+  double* spacing = this->GetImage()->GetSpacing();
+  double* origin  = this->GetImage()->GetOrigin();
   double *imBounds = this->GetImage()->GetBounds();
 
   // check if pos lies inside image bounds
@@ -564,7 +648,6 @@ void vtkViewImage2D::UpdatePosition ()
       this->GetCurrentVoxelCoordinates(imCoor);
       int dims[3];
       this->GetImage()->GetDimensions (dims);
-      double mm;
       
       std::ostringstream os;
       os << "Slice: ";
@@ -595,7 +678,7 @@ void vtkViewImage2D::UpdatePosition ()
       }
       
       os << "Value: " << this->GetCurrentPointDoubleValue() << std::endl;
-//      os << "<window>\n<level>";
+      os << "<window>\n<level>";
       this->SetUpRightAnnotation(os.str().c_str());
     }
 
@@ -692,13 +775,17 @@ void vtkViewImage2D::SetWindow (double w)
   double v_min = this->GetLevel() - 0.5*this->GetWindow();
   double v_max = this->GetLevel() + 0.5*this->GetWindow();
 
-  if( this->GetLookupTable())
+  if( this->GetLookupTable() && this->WindowLevel->GetLookupTable())
   {
   
     this->GetLookupTable()->SetRange ( (v_min-0.5*this->GetShift())/this->GetScale(),
                                        (v_max-1.5*this->GetShift())/this->GetScale());
     this->WindowLevel->GetLookupTable()->SetRange (v_min, v_max);
   }
+
+  if (this->BGWindowLevel && this->BGWindowLevel->GetLookupTable())
+      this->BGWindowLevel->GetLookupTable()->SetRange (v_min, v_max);
+  
   
 }
 
@@ -715,7 +802,7 @@ void vtkViewImage2D::SetLevel (double l)
   double v_min = this->GetLevel() - 0.5*this->GetWindow();
   double v_max = this->GetLevel() + 0.5*this->GetWindow();
   
-  if( this->GetLookupTable() )
+  if( this->GetLookupTable() && this->WindowLevel->GetLookupTable())
   {
     this->GetLookupTable()->SetRange ( (v_min-0.5*this->GetShift())/this->GetScale(),
                                        (v_max-1.5*this->GetShift())/this->GetScale());
@@ -749,6 +836,18 @@ void vtkViewImage2D::SetImage(vtkImageData* image)
 {
   if(!image)
   {
+    return;
+  }
+
+  int* extent = image->GetExtent();
+  if( extent[1]<extent[0] || extent[3]<extent[2] || extent[5]<extent[4] )
+  {
+    vtkErrorMacro ( << "Image extent is not valid: " << extent[0] << " "
+		    << extent[1] << " "
+		    << extent[2] << " "
+		    << extent[3] << " "
+		    << extent[4] << " "
+		    << extent[5]);
     return;
   }
   
@@ -1077,7 +1176,7 @@ vtkActor* vtkViewImage2D::AddDataSet (vtkDataSet* dataset,  vtkProperty* propert
   else
   {
     
-    if ( !this->GetImage() )
+      if ( (!this->GetImage()) && (!this->GetBGImage()) )
     {
       doit = false;
     }
@@ -1091,11 +1190,11 @@ vtkActor* vtkViewImage2D::AddDataSet (vtkDataSet* dataset,  vtkProperty* propert
        }
        
     */
-      
-  int *extent  = this->ImageReslice->GetOutput()->GetExtent();  
-  double *origin  = this->ImageReslice->GetOutput()->GetOrigin();
-  double *spacing = this->ImageReslice->GetOutput()->GetSpacing();
-  
+    
+    int *extent  = this->ImageReslice->GetOutput()->GetExtent();  
+    double *origin  = this->ImageReslice->GetOutput()->GetOrigin();
+    double *spacing = this->ImageReslice->GetOutput()->GetSpacing();
+
     if (doit)
     {
       
@@ -1694,3 +1793,198 @@ void vtkViewImage2D::PrintSelf(ostream& os, vtkIndent indent)
 
 
 
+
+
+void vtkViewImage2D::SetBG(vtkImageData *image, int slice, vtkTransform* transform)
+{
+   
+   
+    if (!this->GetRenderer() || !image || slice < 0)
+	return;
+    
+    int dim = image->GetDataDimension();
+    vtkImageActor* actor = vtkImageActor::New();
+    vtkImageMapToColors*  windowLevel = vtkImageMapToColors::New();
+    int* w_ext = image->GetWholeExtent();
+    vtkLookupTable* lut = vtkLookupTable::New();
+  
+
+//  vtkImageData * input = vtkImageData::New();
+// case image->GetScalarTypr() == VTK_UNSIGNED_CHAR?
+
+    vtkLookupTable* imgLut =  vtkLookupTable::SafeDownCast (this->WindowLevel->GetLookupTable());
+    if(imgLut)
+    {
+	lut->DeepCopy(imgLut);
+	windowLevel->SetLookupTable(lut);
+    }
+
+    double range[2];
+    image->GetScalarRange (range);
+    if ( windowLevel->GetLookupTable() )
+    {
+	windowLevel->GetLookupTable()->SetRange (range);
+    }
+	
+    
+    windowLevel->SetInput(image);
+    actor->SetInput(windowLevel->GetOutput());
+ 
+    if (dim==3)
+    {
+	int nbSl;
+	switch (this->Orientation)
+	{
+	case vtkViewImage::AXIAL_ID:
+	    nbSl = w_ext[5] - w_ext[4] + 1;
+	    if (slice > nbSl)
+	    {
+		std::cout<<"Error: cannot add a background image, the slice number is to high "<<std::endl;
+		return;
+	    }
+	    else
+		actor->SetDisplayExtent( w_ext[0], w_ext[1], w_ext[2], w_ext[3], slice, slice);
+	    break;
+	    
+	    
+	case vtkViewImage::CORONAL_ID:
+	    nbSl = w_ext[3] - w_ext[2] + 1;
+	    if (slice > nbSl)
+	    {
+		std::cout<<"Error: can't add a background image, the slice number is to high "<<std::endl;
+		return;
+	    }
+	    else
+		actor->SetDisplayExtent( w_ext[0], w_ext[1], slice ,slice, w_ext[4], w_ext[5]);
+	    break;
+	    
+	    
+	case vtkViewImage::SAGITTAL_ID:
+	    nbSl = w_ext[1] - w_ext[0] + 1;
+	    if (slice > nbSl)
+	    {
+		std::cout<<"Error: can't add a background image, the slice number is to high "<<std::endl;
+		return;
+	    }
+	    else
+	    actor->SetDisplayExtent( slice, slice, w_ext[2], w_ext[3], w_ext[4], w_ext[5]);
+	    break;
+	}  
+    }
+    else
+    {
+	slice = 0;
+	actor->SetDisplayExtent( w_ext[0], w_ext[1], w_ext[2], w_ext[3], 0, 0);
+    }
+
+    if (transform)
+    {
+    actor->SetUserTransform(transform);
+    }
+
+    vtkTransform * transform2 = vtkTransform::New();
+    transform2->RotateX(180);
+    actor->SetUserTransform(transform2);   
+
+    actor->PickableOff();
+    actor->DragableOff();
+
+    if (this->BGActor && this->GetRenderer()->HasViewProp(this->BGActor) )
+    {
+	this->GetRenderer()->RemoveActor(BGActor);
+    }
+
+    this->BGActor = actor;
+    this->BGWindowLevel = windowLevel;
+    this->BGImage = image;
+
+    if (this->ImageActor)
+    {  
+	this->GetRenderer()->RemoveActor(ImageActor);
+	this->GetRenderer()->AddViewProp(this->BGActor);
+	this->GetRenderer()->AddViewProp(ImageActor);
+    }
+    else
+	this->GetRenderer()->AddViewProp(this->BGActor);
+
+
+    actor->Delete();
+    windowLevel->Delete();
+    lut->Delete();
+    transform2->Delete();
+  
+}
+
+
+void vtkViewImage2D::RemoveBGImage()
+{
+  
+    if (this->BGActor && this->GetRenderer()->HasViewProp(this->BGActor))
+    {
+	this->GetRenderer()->RemoveActor(this->BGActor);
+    }
+
+    this->BGImage = 0;
+    this->BGWindowLevel = 0;
+ 
+}
+
+
+void vtkViewImage2D::SetBGOpacity(double opacity)
+{
+    if (!this->BGActor)
+	return;
+    this->BGActor->SetOpacity(opacity);
+}
+
+
+void vtkViewImage2D::SetOpacity(double opacity)
+{
+    if (!this->ImageActor)
+	return;
+    this->ImageActor->SetOpacity(opacity);
+}
+
+
+void vtkViewImage2D::Clear(void)
+{
+// maybe containing some bugs or missing process
+    this->Reset();
+    this->FirstRender = 1;
+    this->FirstImage  = 1;  
+
+    this->RemoveBGImage();
+
+    if (this->ImageActor && this->GetRenderer()->HasViewProp(this->ImageActor) )
+    {
+	this->GetRenderer()->RemoveActor(this->ImageActor);
+    }
+
+    if (this->GetImage())
+	this->GetImage()->Delete();
+   
+
+
+    //vtkImageData * image = vtkImageData::New();
+    //this->GetImage() = Null;
+    //this->SetImage(image);
+
+
+///////////////////
+// useful?
+
+    //this->RemoveAllDataSet();
+//   this->ImageReslice->RemoveAllInputs();
+//     this->WindowLevel->RemoveAllInputs();
+//     this->Blender->RemoveAllInputs();
+//     this->MaskFilter->RemoveAllInputs();
+    // this->ImageActor       = vtkImageActor::New(); // remove inputs?
+    // this->BGActor          = vtkImageActor::New();
+    //  this->BGWindowLevel->RemoveAllInputs();
+    
+    // this->AuxInput     = this->WindowLevel->GetOutput();
+    // this->ResliceInput = this->WindowLevel->GetOutput();
+    // this->RemoveAllDataSet();
+    // this->Update();
+   
+}

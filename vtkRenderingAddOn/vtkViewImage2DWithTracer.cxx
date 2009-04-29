@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithTracer.cxx 477 2007-11-20 17:46:10Z filus $
+Module:    $Id: vtkViewImage2DWithTracer.cxx 1143 2009-04-07 13:24:19Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2007-11-20 18:46:10 +0100 (Di, 20 Nov 2007) $
-Version:   $Revision: 477 $
+Date:      $Date: 2009-04-07 15:24:19 +0200 (Di, 07 Apr 2009) $
+Version:   $Revision: 1143 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,10 +15,11 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include "vtkViewImage2DWithTracer.h"
+// version vtkRenderingAddOn
+#include <vtkRenderingAddOn/vtkViewImage2DWithTracer.h>
 
 #include "vtkImageActor.h"
-#include "vtkFillImageWithPolyData.h"
+#include <vtkRenderingAddOn/vtkFillImageWithPolyData.h>
 #include "vtkGlyphSource2D.h"
 #include "vtkProperty.h"
 #include "vtkMapper.h"
@@ -31,7 +32,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 #include <vtkObjectFactory.h>
 
-vtkCxxRevisionMacro(vtkViewImage2DWithTracer, "$Revision: 477 $");
+vtkCxxRevisionMacro(vtkViewImage2DWithTracer, "$Revision: 1143 $");
 vtkStandardNewMacro(vtkViewImage2DWithTracer);
 
 
@@ -43,6 +44,8 @@ vtkViewImage2DWithTracer::vtkViewImage2DWithTracer()
   this->TracerCbk    = vtkImageTracerWidgetCallback::New();
   this->LUT          = vtkLookupTable::New();
   this->CurrentLabel = 1;
+
+  vtkMapper::SetResolveCoincidentTopologyToDefault(); // changed in vtkImageTracerWidget::New()
   
   // Setting tracer widget properties
   //this->TracerWidget->SetDefaultRenderer ( this->GetRenderer() );
@@ -106,17 +109,31 @@ vtkViewImage2DWithTracer::vtkViewImage2DWithTracer()
 
 
 
-void vtkViewImage2DWithTracer::SetInteractor (vtkRenderWindowInteractor* arg)
+void vtkViewImage2DWithTracer::Initialize ()
 {
-  vtkViewImage2D::SetInteractor(arg);
+  vtkViewImage2D::Initialize();
 
-  if( arg )
+  if( this->GetRenderWindowInteractor() )
   {
     this->GetRenderWindowInteractor()->AddObserver (vtkCommand::KeyPressEvent, this->TracerCbk, -10.0);
     this->TracerWidget->SetInteractor ( this->GetRenderWindowInteractor() );
   }
   
 }
+
+
+void vtkViewImage2DWithTracer::Uninitialize ()
+{
+
+  if( this->GetRenderWindowInteractor() )
+  {
+    this->GetRenderWindowInteractor()->RemoveObserver ( this->TracerCbk );
+    this->TracerWidget->SetInteractor ( NULL );
+  }
+ 
+  vtkViewImage2D::Uninitialize();
+}
+
 
 
 void vtkViewImage2DWithTracer::SetImage (vtkImageData* image)

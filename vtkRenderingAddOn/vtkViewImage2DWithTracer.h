@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithTracer.h 608 2008-01-14 08:21:23Z filus $
+Module:    $Id: vtkViewImage2DWithTracer.h 1137 2009-04-03 15:31:45Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2008-01-14 09:21:23 +0100 (Mo, 14 Jan 2008) $
-Version:   $Revision: 608 $
+Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
+Version:   $Revision: 1137 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -15,6 +15,7 @@ the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
+// version vtkRenderingAddOn
 #ifndef _vtkViewImage2DWithTracer_h_
 #define _vtkViewImage2DWithTracer_h_
 
@@ -24,11 +25,11 @@ PURPOSE.  See the above copyright notices for more information.
 #include<iostream>
 
 // vtk includes
-#include <vtkViewImage2D.h>
+#include <vtkRenderingAddOn/vtkViewImage2D.h>
 #include <vtkImageTracerWidget.h>
 #include <vtkImageData.h>
 #include <vtkLookupTable.h>
-#include <vtkImageTracerWidgetCallback.h>
+#include <vtkRenderingAddOn/vtkImageTracerWidgetCallback.h>
 
 
 class VTK_RENDERINGADDON_EXPORT vtkViewImage2DWithTracer: public vtkViewImage2D
@@ -40,7 +41,8 @@ class VTK_RENDERINGADDON_EXPORT vtkViewImage2DWithTracer: public vtkViewImage2D
   vtkTypeRevisionMacro(vtkViewImage2DWithTracer, vtkViewImage2D);
 
 
-  virtual void SetInteractor (vtkRenderWindowInteractor*);
+  virtual void Initialize ();
+  virtual void Uninitialize ();
   
 
   void PrepareForDelete(void);
