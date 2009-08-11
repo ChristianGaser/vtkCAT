@@ -21,14 +21,14 @@
 #include "vtkInteractorStyleCAT.h"
 #include "vtkSurfaceReader.h"
 #include "vtkScalarBarWidgetCAT.h"
+#include <float.h>
 
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
-vtkDoubleArray* readFreesurferScalars(char* filename);
 
 static double defaultScalarRange[2] = { 0, -1 };
 static int defaultColorbar = 0;
-static int defaultColormap = 0;
+static double defaultClipRange[2] = { 0, -1 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultWindowSize[2] = { 600, 600 };
 
@@ -43,10 +43,10 @@ int main( int argc, char **argv )
   char *scalarFileName = NULL;
   char *outputFileName = NULL;
   int colorbar = defaultColorbar;
-  int colormap = defaultColormap;
   int scalar = 0;
   int png = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
+  double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   double rotate[3] = {defaultRotate[0], defaultRotate[1], defaultRotate[2]};
 
@@ -59,6 +59,10 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-range") == 0) {
     j++; scalarRange[0] = atof(argv[j]);
     j++; scalarRange[1] = atof(argv[j]);
+   }
+   else if (strcmp(argv[j], "-clip") == 0) {
+    j++; clipRange[0] = atof(argv[j]);
+    j++; clipRange[1] = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-size") == 0) {
     j++; WindowSize[0] = atoi(argv[j]);
@@ -78,9 +82,6 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-scalar") == 0) {
     j++; scalarFileName = argv[j];
     scalar = 1;
-   }
-   else if (strcmp(argv[j], "-colormap") == 0) {
-    j++; colormap = atoi(argv[j]);
    }
    else if (strcmp(argv[j], "-output") == 0) {
     j++; outputFileName = argv[j];
@@ -111,6 +112,7 @@ int main( int argc, char **argv )
   vtkRenderer *renderer = vtkRenderer::New();
   vtkPolyDataMapper *polyDataMapper = vtkPolyDataMapper::New();
   vtkLookupTable *lookupTable = vtkLookupTable::New();
+  vtkLookupTable *lookupTable2 = vtkLookupTable::New();
   vtkActor *actor = vtkActor::New();
   vtkScalarBarWidgetCAT *scalarBarWidget = vtkScalarBarWidgetCAT::New();
   vtkInteractorStyleCAT *interactorStyleCAT = vtkInteractorStyleCAT::New();
@@ -146,22 +148,35 @@ int main( int argc, char **argv )
     vtkDoubleArray *scalars = NULL;
     scalars = readScalars(scalarFileName);
     polyDataReader->GetOutput()->GetPointData()->SetScalars(scalars);
+    
+    // clip values if defined
+    if (clipRange[1] > clipRange[0]) {
+      for(int i=0; i < polyDataReader->GetOutput()->GetNumberOfPoints(); i++) {
+        if((scalars->GetValue(i) > clipRange[0]) && (scalars->GetValue(i) < clipRange[1]))
+          scalars->SetValue(i,-FLT_MAX);
+      }
+    }
+
   }
 
   if (scalarRange[1] < scalarRange[0])
     polyDataReader->GetOutput()->GetScalarRange( scalarRange );
+  
   lookupTable->SetTableRange( scalarRange );
-  if (colormap == 0) {
-    lookupTable->SetHueRange( 0.667, 0.0 );
-    lookupTable->SetSaturationRange( 1, 1 );
-    lookupTable->SetValueRange( 1, 1 );
-  } else {
-    lookupTable->SetSaturationRange (0, 0);
-    lookupTable->SetHueRange (0, 0);
-    lookupTable->SetValueRange (0, 1);
-  }
+  lookupTable->SetHueRange( 0.667, 0.0 );
+  lookupTable->SetSaturationRange( 1, 1 );
+  lookupTable->SetValueRange( 1, 1 );
 
   lookupTable->Build();
+  lookupTable->SetTableValue(0, 1.0, 1.0, 1.0, 1.0 );
+
+  // we need a 2nd looupTable for the colorbar
+  lookupTable2->SetTableRange( scalarRange );
+  lookupTable2->SetHueRange( 0.667, 0.0 );
+  lookupTable2->SetSaturationRange( 1, 1 );
+  lookupTable2->SetValueRange( 1, 1 );
+
+  lookupTable2->Build();
 
   // plot colorbar only if scalar vector data is defined
   if (polyDataReader->GetOutput()->GetPointData()->GetScalars()) {
@@ -171,7 +186,7 @@ int main( int argc, char **argv )
       polyDataMapper->SetLookupTable( lookupTable );
       if (colorbar == 1) {
         scalarBarWidget->SetInteractor(renderWindowInteractor);
-        scalarBarWidget->GetScalarBarActor()->SetLookupTable(polyDataMapper->GetLookupTable());
+        scalarBarWidget->GetScalarBarActor()->SetLookupTable(lookupTable2);
         scalarBarWidget->GetScalarBarActor()->SetOrientationToHorizontal();
         scalarBarWidget->GetScalarBarActor()->SetWidth(0.4);
         scalarBarWidget->GetScalarBarActor()->SetHeight(0.075);
@@ -207,6 +222,7 @@ int main( int argc, char **argv )
 
   polyDataReader->Delete();
   lookupTable->Delete();
+  lookupTable2->Delete();
   actor->Delete();
   polyDataMapper->Delete();
   renderer->Delete();
@@ -291,8 +307,9 @@ usage(const char* const prog)
   << "     File with scalar values (either ascii or Freesurfer format)." << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
-  << "  -colormap map  " << endl
-  << "     Select colormap (default 0)." << endl
+  << "  -clip lower upper  " << endl
+  << "     Clip scalar values. These values will be not displayed." << endl
+  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
   << "  -left  " << endl
   << "     Show left hemisphere (default right)." << endl
   << "  -rotate x y z " << endl
