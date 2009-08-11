@@ -28,6 +28,7 @@ vtkDoubleArray* readFreesurferScalars(char* filename);
 
 static double defaultScalarRange[2] = { 0, -1 };
 static int defaultColorbar = 0;
+static int defaultColormap = 0;
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultWindowSize[2] = { 600, 600 };
 
@@ -42,6 +43,7 @@ int main( int argc, char **argv )
   char *scalarFileName = NULL;
   char *outputFileName = NULL;
   int colorbar = defaultColorbar;
+  int colormap = defaultColormap;
   int scalar = 0;
   int png = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
@@ -76,6 +78,9 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-scalar") == 0) {
     j++; scalarFileName = argv[j];
     scalar = 1;
+   }
+   else if (strcmp(argv[j], "-colormap") == 0) {
+    j++; colormap = atoi(argv[j]);
    }
    else if (strcmp(argv[j], "-output") == 0) {
     j++; outputFileName = argv[j];
@@ -146,9 +151,16 @@ int main( int argc, char **argv )
   if (scalarRange[1] < scalarRange[0])
     polyDataReader->GetOutput()->GetScalarRange( scalarRange );
   lookupTable->SetTableRange( scalarRange );
-  lookupTable->SetHueRange( 0.667, 0.0 );
-  lookupTable->SetSaturationRange( 1, 1 );
-  lookupTable->SetValueRange( 1, 1 );
+  if (colormap == 0) {
+    lookupTable->SetHueRange( 0.667, 0.0 );
+    lookupTable->SetSaturationRange( 1, 1 );
+    lookupTable->SetValueRange( 1, 1 );
+  } else {
+    lookupTable->SetSaturationRange (0, 0);
+    lookupTable->SetHueRange (0, 0);
+    lookupTable->SetValueRange (0, 1);
+  }
+
   lookupTable->Build();
 
   // plot colorbar only if scalar vector data is defined
@@ -279,6 +291,8 @@ usage(const char* const prog)
   << "     File with scalar values (either ascii or Freesurfer format)." << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
+  << "  -colormap map  " << endl
+  << "     Select colormap (default 0)." << endl
   << "  -left  " << endl
   << "     Show left hemisphere (default right)." << endl
   << "  -rotate x y z " << endl

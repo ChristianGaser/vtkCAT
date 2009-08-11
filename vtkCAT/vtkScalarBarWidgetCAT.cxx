@@ -263,9 +263,9 @@ void vtkScalarBarWidgetCAT::OnMouseMove()
     range[0] = range[1] - 1e-3;
 
   scalarBar->SetTableRange(range);
-  scalarBar->SetHueRange( 0.667, 0.0 );
-  scalarBar->SetSaturationRange( 1, 1 );
-  scalarBar->SetValueRange( 1, 1 );
+//  scalarBar->SetHueRange( 0.667, 0.0 );
+//  scalarBar->SetSaturationRange( 1, 1 );
+//  scalarBar->SetValueRange( 1, 1 );
   scalarBar->Build();
   this->ScalarBarActor->SetLookupTable(scalarBar);
 

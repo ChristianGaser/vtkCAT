@@ -1,10 +1,10 @@
-﻿/*=========================================================================
+/*=========================================================================
 
 Program:   vtkINRIA3D
 Module:    $Id: vtkImage3DCroppingBoxCallback.cxx 1133 2009-03-18 17:37:24Z filus $
 Language:  C++
 Author:    $Author: filus $
-Date:      $Date: 2009-03-18 18:37:24 +0100 (Mi, 18 MÃ¤r 2009) $
+Date:      $Date: 2009-03-18 18:37:24 +0100 (Mi, 18 Maerz 2009) $
 Version:   $Revision: 1133 $
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
