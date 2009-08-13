@@ -54,8 +54,8 @@ SET(vtkCAT_SRCS
     vtkCAT/vtkScalarBarWidgetCAT.cxx
     vtkCAT/vtkMINCImageReader.cxx
     vtkCAT/vtkMINCImageAttributes.cxx
-	vtkCAT/vtkMetaImageData.cxx
-	vtkCAT/vtkMetaDataSet.cxx
+    vtkCAT/vtkMetaImageData.cxx
+    vtkCAT/vtkMetaDataSet.cxx
 )
 
 SET(vtkRenderingAddOn_SRCS

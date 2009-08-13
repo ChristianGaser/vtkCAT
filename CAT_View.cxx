@@ -21,12 +21,16 @@
 #include "vtkInteractorStyleCAT.h"
 #include "vtkSurfaceReader.h"
 #include "vtkScalarBarWidgetCAT.h"
+#include "vtkLookupTableWithEnabling.h"
 #include <float.h>
+
+typedef  enum  { JET, GRAY, HOT, COLD, HOT2, COLD2, BLUEGREEN };
 
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
 
 static double defaultScalarRange[2] = { 0, -1 };
+static double defaultScalarRangeBkg[2] = { 0, -1 };
 static int defaultColorbar = 0;
 static double defaultClipRange[2] = { 0, -1 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
@@ -41,11 +45,13 @@ int main( int argc, char **argv )
   }
 
   char *scalarFileName = NULL;
+  char *scalarFileNameBkg = NULL;
   char *outputFileName = NULL;
+  int colormap = JET;
   int colorbar = defaultColorbar;
-  int scalar = 0;
-  int png = 0;
+  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
+  double scalarRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   double rotate[3] = {defaultRotate[0], defaultRotate[1], defaultRotate[2]};
@@ -60,6 +66,10 @@ int main( int argc, char **argv )
     j++; scalarRange[0] = atof(argv[j]);
     j++; scalarRange[1] = atof(argv[j]);
    }
+   else if (strcmp(argv[j], "-range-bkg") == 0) {
+    j++; scalarRangeBkg[0] = atof(argv[j]);
+    j++; scalarRangeBkg[1] = atof(argv[j]);
+   }
    else if (strcmp(argv[j], "-clip") == 0) {
     j++; clipRange[0] = atof(argv[j]);
     j++; clipRange[1] = atof(argv[j]);
@@ -67,12 +77,6 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-size") == 0) {
     j++; WindowSize[0] = atoi(argv[j]);
     j++; WindowSize[1] = atoi(argv[j]);
-   }
-   else if (strcmp(argv[j], "-colorbar") == 0) {
-    colorbar = 1;
-   }
-   else if (strcmp(argv[j], "-left") == 0) {
-    rotate[2] = 90;
    }
    else if (strcmp(argv[j], "-rotate") == 0) {
     j++; rotate[0] = atof(argv[j]);
@@ -83,10 +87,30 @@ int main( int argc, char **argv )
     j++; scalarFileName = argv[j];
     scalar = 1;
    }
+   else if (strcmp(argv[j], "-bkg") == 0) {
+    j++; scalarFileNameBkg = argv[j];
+    scalarBkg = 1;
+   }
    else if (strcmp(argv[j], "-output") == 0) {
     j++; outputFileName = argv[j];
     png = 1;
    }
+   else if (strcmp(argv[j], "-log") == 0) 
+    logScale = 1;
+   else if (strcmp(argv[j], "-colorbar") == 0) 
+    colorbar = 1;
+   else if (strcmp(argv[j], "-gray") == 0) 
+    colormap = GRAY;
+   else if (strcmp(argv[j], "-hot") == 0) 
+    colormap = HOT;
+   else if (strcmp(argv[j], "-cold") == 0) 
+    colormap = COLD;
+   else if (strcmp(argv[j], "-hot2") == 0) 
+    colormap = HOT2;
+   else if (strcmp(argv[j], "-cold2") == 0) 
+    colormap = COLD2;
+   else if (strcmp(argv[j], "-bluegreen") == 0) 
+    colormap = BLUEGREEN;
    else {
     cout << endl;
     cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
@@ -109,11 +133,14 @@ int main( int argc, char **argv )
   char *inputFileName = argv[indx];
 
   vtkSurfaceReader *polyDataReader = vtkSurfaceReader::New();
+  vtkSurfaceReader *polyDataReaderBkg = vtkSurfaceReader::New();
   vtkRenderer *renderer = vtkRenderer::New();
-  vtkPolyDataMapper *polyDataMapper = vtkPolyDataMapper::New();
-  vtkLookupTable *lookupTable = vtkLookupTable::New();
-  vtkLookupTable *lookupTable2 = vtkLookupTable::New();
-  vtkActor *actor = vtkActor::New();
+  vtkPolyDataMapper *polyDataMapper  = vtkPolyDataMapper::New();
+  vtkPolyDataMapper *polyDataMapperBkg = vtkPolyDataMapper::New();
+  vtkLookupTable *lookupTableBkg = vtkLookupTable::New();
+  vtkLookupTableWithEnabling *lookupTable = vtkLookupTableWithEnabling::New();
+  vtkActor *actor  = vtkActor::New();
+  vtkActor *actorBkg = vtkActor::New();
   vtkScalarBarWidgetCAT *scalarBarWidget = vtkScalarBarWidgetCAT::New();
   vtkInteractorStyleCAT *interactorStyleCAT = vtkInteractorStyleCAT::New();
   vtkRenderWindowInteractor *renderWindowInteractor =  vtkRenderWindowInteractor::New();
@@ -123,10 +150,24 @@ int main( int argc, char **argv )
     
   polyDataReader->SetFileName( inputFileName );
   polyDataReader->Update();
-    
+
+  polyDataMapper->SetInput( polyDataReader->GetOutput() );
+
   cerr << "input number of points/polys " <<   polyDataReader->GetOutput()->GetNumberOfPoints() <<
     "/" <<  polyDataReader->GetOutput()->GetNumberOfPolys() << endl ;
-  polyDataMapper->SetInput( polyDataReader->GetOutput() );
+      
+  if (scalarBkg) {
+    polyDataReaderBkg->SetFileName( inputFileName );
+    polyDataReaderBkg->Update();
+    polyDataMapperBkg->SetInput( polyDataReaderBkg->GetOutput() );
+
+    actorBkg->SetMapper( polyDataMapperBkg );
+    actorBkg->RotateX(rotate[0]);
+    actorBkg->RotateY(rotate[1]);
+    actorBkg->RotateZ(rotate[2]);
+
+    renderer->AddActor( actorBkg );
+  }
   
   actor->SetMapper( polyDataMapper );
   actor->RotateX(rotate[0]);
@@ -143,7 +184,7 @@ int main( int argc, char **argv )
   renderWindowInteractor->Initialize();
 
   // read scalars if defined
-  if (scalar == 1) {
+  if (scalar) {
     cout << "Read scalars: " << scalarFileName << endl; 
     vtkDoubleArray *scalars = NULL;
     scalars = readScalars(scalarFileName);
@@ -153,40 +194,90 @@ int main( int argc, char **argv )
     if (clipRange[1] > clipRange[0]) {
       for(int i=0; i < polyDataReader->GetOutput()->GetNumberOfPoints(); i++) {
         if((scalars->GetValue(i) > clipRange[0]) && (scalars->GetValue(i) < clipRange[1]))
-          scalars->SetValue(i,-FLT_MAX);
+          scalars->SetValue(i,0);
       }
     }
-
   }
 
   if (scalarRange[1] < scalarRange[0])
     polyDataReader->GetOutput()->GetScalarRange( scalarRange );
   
+  // read scalars if defined
+  if (scalarBkg) {
+    cout << "Read background scalars: " << scalarFileNameBkg << endl; 
+    vtkDoubleArray *scalarsBkg = NULL;
+    scalarsBkg = readScalars(scalarFileNameBkg);
+    polyDataReaderBkg->GetOutput()->GetPointData()->SetScalars(scalarsBkg);
+    if (scalarRangeBkg[1] < scalarRangeBkg[0])
+      polyDataReaderBkg->GetOutput()->GetScalarRange( scalarRangeBkg );
+  }
+
+  // build colormap
+  switch(colormap) {
+  case JET:
+    lookupTable->SetHueRange( 0.667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case GRAY:
+    lookupTable->SetHueRange( 0.0, 0.0 );
+    lookupTable->SetSaturationRange( 0.0, 0.0 );
+    lookupTable->SetValueRange( 0.0, 1.0 );
+    break;
+  case HOT:
+    lookupTable->SetHueRange( 0.0, 0.1667 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case COLD:
+    lookupTable->SetHueRange( 0.66667, 0.5);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case HOT2:
+    lookupTable->SetHueRange( 0.1667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case COLD2:
+    lookupTable->SetHueRange( 0.5, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case BLUEGREEN:
+    lookupTable->SetHueRange( 0.66667, 0.33333);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  }
+
+  if(logScale) lookupTable->SetScaleToLog10();
   lookupTable->SetTableRange( scalarRange );
-  lookupTable->SetHueRange( 0.667, 0.0 );
-  lookupTable->SetSaturationRange( 1, 1 );
-  lookupTable->SetValueRange( 1, 1 );
-
+  lookupTable->SetEnabledArray(polyDataReader->GetOutput()->GetPointData()->GetScalars());
   lookupTable->Build();
-  lookupTable->SetTableValue(0, 1.0, 1.0, 1.0, 1.0 );
 
-  // we need a 2nd looupTable for the colorbar
-  lookupTable2->SetTableRange( scalarRange );
-  lookupTable2->SetHueRange( 0.667, 0.0 );
-  lookupTable2->SetSaturationRange( 1, 1 );
-  lookupTable2->SetValueRange( 1, 1 );
-
-  lookupTable2->Build();
-
+  // background surface is alway gray
+  if(scalarBkg) {
+    lookupTableBkg->SetTableRange( scalarRangeBkg );
+    lookupTableBkg->SetHueRange( 0.0, 0.0 );
+    lookupTableBkg->SetSaturationRange( 0, 0 );
+    lookupTableBkg->SetValueRange( 0.0, 1.0 );
+    lookupTableBkg->Build();
+  }
+  
   // plot colorbar only if scalar vector data is defined
   if (polyDataReader->GetOutput()->GetPointData()->GetScalars()) {
     if (polyDataReader->GetOutput()->GetPointData()->GetScalars()->GetNumberOfComponents() == 1) {
       // if scalarRange is not defined use range from reader
       polyDataMapper->SetScalarRange( scalarRange );
       polyDataMapper->SetLookupTable( lookupTable );
+      if(scalarBkg) {
+        polyDataMapperBkg->SetScalarRange( scalarRangeBkg );
+        polyDataMapperBkg->SetLookupTable( lookupTableBkg );
+      }
       if (colorbar == 1) {
         scalarBarWidget->SetInteractor(renderWindowInteractor);
-        scalarBarWidget->GetScalarBarActor()->SetLookupTable(lookupTable2);
+        scalarBarWidget->GetScalarBarActor()->SetLookupTable(lookupTable);
         scalarBarWidget->GetScalarBarActor()->SetOrientationToHorizontal();
         scalarBarWidget->GetScalarBarActor()->SetWidth(0.4);
         scalarBarWidget->GetScalarBarActor()->SetHeight(0.075);
@@ -208,23 +299,26 @@ int main( int argc, char **argv )
 
     cout << "Write: " << outputFileName << endl; 
 
-	vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
-	windowToImageFilter->SetInput( renderWindow );
+    vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
+    windowToImageFilter->SetInput( renderWindow );
                                                 	
-	vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
-	PNGWriter->SetInput( windowToImageFilter->GetOutput() );
-	PNGWriter->SetFileName( outputFileName );
-	windowToImageFilter->Update();
-	PNGWriter->Write();
-	PNGWriter->Delete();
-	windowToImageFilter->Delete();
+    vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
+    PNGWriter->SetInput( windowToImageFilter->GetOutput() );
+    PNGWriter->SetFileName( outputFileName );
+    windowToImageFilter->Update();
+    PNGWriter->Write();
+    PNGWriter->Delete();
+    windowToImageFilter->Delete();
   } else renderWindowInteractor->Start();
 
   polyDataReader->Delete();
+  polyDataReaderBkg->Delete();
   lookupTable->Delete();
-  lookupTable2->Delete();
+  lookupTableBkg->Delete();
   actor->Delete();
+  actorBkg->Delete();
   polyDataMapper->Delete();
+  polyDataMapperBkg->Delete();
   renderer->Delete();
   renderWindow->Delete();
   interactorStyleCAT->Delete();
@@ -305,8 +399,25 @@ usage(const char* const prog)
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
   << "  -scalar scalarInput.txt  " << endl
   << "     File with scalar values (either ascii or Freesurfer format)." << endl
+  << "  -bkg scalarInputBkg.txt  " << endl
+  << "     File with scalar values for background surface (either ascii or Freesurfer format)." << endl
+  << "  -range-bkg lower upper  " << endl
+  << "     Range of scalar values for background surface." << endl
+  << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
+  << "  -gray  " << endl
+  << "     Use gray colorbar (default jet)." << endl
+  << "  -hot  " << endl
+  << "     Use hot colorbar (default jet)." << endl
+  << "  -cold  " << endl
+  << "     Use cold colorbar (default jet)." << endl
+  << "  -hot2  " << endl
+  << "     Use inverse hot colorbar (default jet)." << endl
+  << "  -cold2  " << endl
+  << "     Use inverse cold colorbar (default jet)." << endl
+  << "  -bluegreen  " << endl
+  << "     Use blue-green colorbar (default jet)." << endl
   << "  -clip lower upper  " << endl
   << "     Clip scalar values. These values will be not displayed." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
