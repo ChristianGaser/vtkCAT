@@ -192,6 +192,12 @@ int main( int argc, char **argv )
     cout << "Read scalars: " << scalarFileName << endl; 
     vtkDoubleArray *scalars = NULL;
     scalars = readScalars(scalarFileName);
+    
+    if(scalars == NULL) {
+      cerr << "Error reading file " << scalarFileName << endl;
+      return(-1);
+    }
+    
     polyDataReader->GetOutput()->GetPointData()->SetScalars(scalars);
     
     // clip values if defined
