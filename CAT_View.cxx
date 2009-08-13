@@ -24,7 +24,7 @@
 #include "vtkLookupTableWithEnabling.h"
 #include <float.h>
 
-typedef  enum  { JET, GRAY, HOT, COLD, HOT2, COLD2, BLUEGREEN, GREENBLUE };
+typedef  enum  { JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE };
 
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
@@ -103,14 +103,14 @@ int main( int argc, char **argv )
     colorbar = 1;
    else if (strcmp(argv[j], "-gray") == 0) 
     colormap = GRAY;
-   else if (strcmp(argv[j], "-hot") == 0) 
-    colormap = HOT;
-   else if (strcmp(argv[j], "-cold") == 0) 
-    colormap = COLD;
-   else if (strcmp(argv[j], "-hot2") == 0) 
-    colormap = HOT2;
-   else if (strcmp(argv[j], "-cold2") == 0) 
-    colormap = COLD2;
+   else if (strcmp(argv[j], "-redyellow") == 0) 
+    colormap = REDYELLOW;
+   else if (strcmp(argv[j], "-bluecyan") == 0) 
+    colormap = BLUECYAN;
+   else if (strcmp(argv[j], "-yellowred") == 0) 
+    colormap = YELLOWRED;
+   else if (strcmp(argv[j], "-cyanblue") == 0) 
+    colormap = CYANBLUE;
    else if (strcmp(argv[j], "-bluegreen") == 0) 
     colormap = BLUEGREEN;
    else if (strcmp(argv[j], "-greenblue") == 0) 
@@ -234,22 +234,22 @@ int main( int argc, char **argv )
     lookupTable->SetSaturationRange( 0.0, 0.0 );
     lookupTable->SetValueRange( 0.0, 1.0 );
     break;
-  case HOT:
+  case REDYELLOW:
     lookupTable->SetHueRange( 0.0, 0.1667 );
     lookupTable->SetSaturationRange( 1.0, 1.0 );
     lookupTable->SetValueRange( 1.0, 1.0 );
     break;
-  case COLD:
+  case BLUECYAN:
     lookupTable->SetHueRange( 0.66667, 0.5);
     lookupTable->SetSaturationRange( 1.0, 1.0 );
     lookupTable->SetValueRange( 1.0, 1.0 );
     break;
-  case HOT2:
+  case YELLOWRED:
     lookupTable->SetHueRange( 0.1667, 0.0 );
     lookupTable->SetSaturationRange( 1.0, 1.0 );
     lookupTable->SetValueRange( 1.0, 1.0 );
     break;
-  case COLD2:
+  case CYANBLUE:
     lookupTable->SetHueRange( 0.5, 0.66667);
     lookupTable->SetSaturationRange( 1.0, 1.0 );
     lookupTable->SetValueRange( 1.0, 1.0 );
@@ -424,14 +424,14 @@ usage(const char* const prog)
   << "     Show colorbar (default no)." << endl
   << "  -gray  " << endl
   << "     Use gray colorbar (default jet)." << endl
-  << "  -hot  " << endl
-  << "     Use hot colorbar (default jet)." << endl
-  << "  -cold  " << endl
-  << "     Use cold colorbar (default jet)." << endl
-  << "  -hot2  " << endl
-  << "     Use inverse hot colorbar (default jet)." << endl
-  << "  -cold2  " << endl
-  << "     Use inverse cold colorbar (default jet)." << endl
+  << "  -redyellow  " << endl
+  << "     Use red-yellow colorbar (default jet)." << endl
+  << "  -bluecyan  " << endl
+  << "     Use blue-cyan colorbar (default jet)." << endl
+  << "  -yellowred  " << endl
+  << "     Use yellow-red colorbar (default jet)." << endl
+  << "  -cyanblue  " << endl
+  << "     Use cyan-blue colorbar (default jet)." << endl
   << "  -bluegreen  " << endl
   << "     Use blue-green colorbar (default jet)." << endl
   << "  -greenblue  " << endl
