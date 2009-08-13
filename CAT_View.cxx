@@ -29,10 +29,11 @@ typedef  enum  { JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN,
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
 
-static double defaultScalarRange[2] = { 0, -1 };
-static double defaultScalarRangeBkg[2] = { 0, -1 };
+static double defaultScalarRange[2] = { 0.0, -1.0 };
+static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
+static double defaultAlpha = 1.0;
 static int defaultColorbar = 0;
-static double defaultClipRange[2] = { 0, -1 };
+static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultWindowSize[2] = { 600, 600 };
 
@@ -49,6 +50,7 @@ int main( int argc, char **argv )
   char *outputFileName = NULL;
   int colormap = JET;
   int colorbar = defaultColorbar;
+  double alpha = defaultAlpha;
   int scalar = 0, scalarBkg = 0, png = 0, logScale = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
   double scalarRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
@@ -94,6 +96,9 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-output") == 0) {
     j++; outputFileName = argv[j];
     png = 1;
+   }
+   else if (strcmp(argv[j], "-opacity") == 0) {
+    j++; alpha = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-left") == 0)
     rotate[2] = 90;
@@ -151,7 +156,11 @@ int main( int argc, char **argv )
   vtkRenderWindow *renderWindow = vtkRenderWindow::New();
 
   renderer->SetBackground( 0.0, 0.0, 0.0 );
-    
+  
+  // limit range of alpha to 0..1
+  if( alpha > 1.0) alpha = 1.0;
+  if( alpha < 0.0) alpha = 0.0;
+  
   polyDataReader->SetFileName( inputFileName );
   polyDataReader->Update();
 
@@ -265,6 +274,9 @@ int main( int argc, char **argv )
     lookupTable->SetValueRange( 1.0, 1.0 );
     break;
   }
+  
+  // set opacity  
+  lookupTable->SetAlphaRange( alpha, alpha );
 
   if(logScale) lookupTable->SetScaleToLog10();
   lookupTable->SetTableRange( scalarRange );
@@ -277,7 +289,7 @@ int main( int argc, char **argv )
     lookupTableBkg->SetTableRange( scalarRangeBkg );
     lookupTableBkg->SetHueRange( 0.0, 0.0 );
     lookupTableBkg->SetSaturationRange( 0, 0 );
-    lookupTableBkg->SetValueRange( 0.0, 1.0 );
+    lookupTableBkg->SetValueRange( 0.5, 1.0 );
     lookupTableBkg->Build();
   }
   
@@ -408,21 +420,27 @@ usage(const char* const prog)
   << "    This program will render the <input.vtk> surface." << endl
   << endl
   << "OPTIONS" << endl
-  << "  -size xsize ysize  " << endl
-  << "     Window size." << endl
-  << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
+  << " Overlay:" << endl
+  << "  -scalar scalarInput.txt  " << endl
+  << "     File with scalar values (either ascii or Freesurfer format)." << endl
   << "  -range lower upper  " << endl
   << "     Range of scalar values." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
-  << "  -scalar scalarInput.txt  " << endl
-  << "     File with scalar values (either ascii or Freesurfer format)." << endl
+  << "  -clip lower upper  " << endl
+  << "     Clip scalar values. These values will be not displayed." << endl
+  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << "  -colorbar  " << endl
+  << "     Show colorbar (default no)." << endl
+  << " Background surface:" << endl
   << "  -bkg scalarInputBkg.txt  " << endl
   << "     File with scalar values for background surface (either ascii or Freesurfer format)." << endl
   << "  -range-bkg lower upper  " << endl
   << "     Range of scalar values for background surface." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
-  << "  -colorbar  " << endl
-  << "     Show colorbar (default no)." << endl
+  << " Colors:" << endl
+  << "  -opacity value  " << endl
+  << "     Value for opacity of overlay." << endl
+  << "     Default value: " << defaultAlpha << endl
   << "  -gray  " << endl
   << "     Use gray colorbar (default jet)." << endl
   << "  -redyellow  " << endl
@@ -437,16 +455,18 @@ usage(const char* const prog)
   << "     Use blue-green colorbar (default jet)." << endl
   << "  -greenblue  " << endl
   << "     Use green-blue colorbar (default jet)." << endl
-  << "  -clip lower upper  " << endl
-  << "     Clip scalar values. These values will be not displayed." << endl
-  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << " Orientation:" << endl
   << "  -left  " << endl
   << "     Show left hemisphere (default right)." << endl
   << "  -rotate x y z " << endl
   << "     Rotate xyz-axis." << endl
   << "     Default value: " << defaultRotate[0] << " " << defaultRotate[1] << " " << defaultRotate[2] << endl
+  << " Window:" << endl
+  << "  -size xsize ysize  " << endl
+  << "     Window size." << endl
+  << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
   << "  -output output.png  " << endl
-  << "     Save png-file." << endl
+  << "     Save as png-file." << endl
   << endl
   << "KEYBOARD INTERACTIONS" << endl
   << "  u d l r" << endl
