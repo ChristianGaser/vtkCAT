@@ -1,5 +1,9 @@
 #include <string>
 
+#ifndef VTK_MAJOR_VERSION
+#  include "vtkVersion.h"
+#endif
+
 #include "vtkFileOutputWindow.h"
 #include "vtkPolyData.h"
 #include "vtkPointData.h"
@@ -21,7 +25,9 @@
 #include "vtkInteractorStyleCAT.h"
 #include "vtkSurfaceReader.h"
 #include "vtkScalarBarWidgetCAT.h"
-#include "vtkLookupTableWithEnabling.h"
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
+  #include "vtkLookupTableWithEnabling.h"
+#endif
 #include <float.h>
 
 typedef  enum  { JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE };
@@ -73,8 +79,13 @@ int main( int argc, char **argv )
     j++; scalarRangeBkg[1] = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-clip") == 0) {
-    j++; clipRange[0] = atof(argv[j]);
-    j++; clipRange[1] = atof(argv[j]);
+    #if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION<4
+      cout << "Clipping of values only possible for VTK >5.4." << endl;
+      j++;j++;
+    #else
+      j++; clipRange[0] = atof(argv[j]);
+      j++; clipRange[1] = atof(argv[j]);
+    #endif
    }
    else if (strcmp(argv[j], "-size") == 0) {
     j++; WindowSize[0] = atoi(argv[j]);
@@ -91,7 +102,12 @@ int main( int argc, char **argv )
    }
    else if (strcmp(argv[j], "-bkg") == 0) {
     j++; scalarFileNameBkg = argv[j];
-    scalarBkg = 1;
+    #if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION<4
+      cout << "Overlay onto backgound surface only possible for VTK >5.4." << endl;
+      scalarBkg = 0;
+    #else
+      scalarBkg = 1;
+    #endif
    }
    else if (strcmp(argv[j], "-output") == 0) {
     j++; outputFileName = argv[j];
@@ -146,8 +162,6 @@ int main( int argc, char **argv )
   vtkRenderer *renderer = vtkRenderer::New();
   vtkPolyDataMapper *polyDataMapper  = vtkPolyDataMapper::New();
   vtkPolyDataMapper *polyDataMapperBkg = vtkPolyDataMapper::New();
-  vtkLookupTable *lookupTableBkg = vtkLookupTable::New();
-  vtkLookupTableWithEnabling *lookupTable = vtkLookupTableWithEnabling::New();
   vtkActor *actor  = vtkActor::New();
   vtkActor *actorBkg = vtkActor::New();
   vtkScalarBarWidgetCAT *scalarBarWidget = vtkScalarBarWidgetCAT::New();
@@ -169,6 +183,9 @@ int main( int argc, char **argv )
   cerr << "input number of points/polys " <<   polyDataReader->GetOutput()->GetNumberOfPoints() <<
     "/" <<  polyDataReader->GetOutput()->GetNumberOfPolys() << endl ;
       
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
+  vtkLookupTableWithEnabling *lookupTable = vtkLookupTableWithEnabling::New();
+  
   if (scalarBkg) {
     polyDataReaderBkg->SetFileName( inputFileName );
     polyDataReaderBkg->Update();
@@ -181,6 +198,9 @@ int main( int argc, char **argv )
 
     renderer->AddActor( actorBkg );
   }
+#else
+    vtkLookupTable *lookupTable = vtkLookupTable::New();
+#endif
   
   actor->SetMapper( polyDataMapper );
   actor->RotateX(rotate[0]);
@@ -222,6 +242,7 @@ int main( int argc, char **argv )
     polyDataReader->GetOutput()->GetScalarRange( scalarRange );
   
   // read scalars if defined
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
   if (scalarBkg) {
     cout << "Read background scalars: " << scalarFileNameBkg << endl; 
     vtkDoubleArray *scalarsBkg = NULL;
@@ -230,6 +251,7 @@ int main( int argc, char **argv )
     if (scalarRangeBkg[1] < scalarRangeBkg[0])
       polyDataReaderBkg->GetOutput()->GetScalarRange( scalarRangeBkg );
   }
+#endif
 
   // build colormap
   switch(colormap) {
@@ -280,11 +302,16 @@ int main( int argc, char **argv )
 
   if(logScale) lookupTable->SetScaleToLog10();
   lookupTable->SetTableRange( scalarRange );
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
   if (clipRange[1] >= clipRange[0])
     lookupTable->SetEnabledArray(polyDataReader->GetOutput()->GetPointData()->GetScalars());
+#endif
   lookupTable->Build();
 
   // background surface is alway gray
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
+  vtkLookupTable *lookupTableBkg = vtkLookupTable::New();  
+  
   if(scalarBkg) {
     lookupTableBkg->SetTableRange( scalarRangeBkg );
     lookupTableBkg->SetHueRange( 0.0, 0.0 );
@@ -292,6 +319,7 @@ int main( int argc, char **argv )
     lookupTableBkg->SetValueRange( 0.5, 1.0 );
     lookupTableBkg->Build();
   }
+#endif
   
   // plot colorbar only if scalar vector data is defined
   if (polyDataReader->GetOutput()->GetPointData()->GetScalars()) {
@@ -299,10 +327,12 @@ int main( int argc, char **argv )
       // if scalarRange is not defined use range from reader
       polyDataMapper->SetScalarRange( scalarRange );
       polyDataMapper->SetLookupTable( lookupTable );
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
       if(scalarBkg) {
         polyDataMapperBkg->SetScalarRange( scalarRangeBkg );
         polyDataMapperBkg->SetLookupTable( lookupTableBkg );
       }
+#endif
       if (colorbar == 1) {
         scalarBarWidget->SetInteractor(renderWindowInteractor);
         scalarBarWidget->lookupTable = lookupTable;
@@ -343,7 +373,6 @@ int main( int argc, char **argv )
   polyDataReader->Delete();
   polyDataReaderBkg->Delete();
   lookupTable->Delete();
-  lookupTableBkg->Delete();
   actor->Delete();
   actorBkg->Delete();
   polyDataMapper->Delete();
@@ -353,6 +382,9 @@ int main( int argc, char **argv )
   interactorStyleCAT->Delete();
   renderWindowInteractor->Delete();
   scalarBarWidget->Delete();
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
+  if (scalarBkg) lookupTableBkg->Delete();
+#endif
 
   return 0;
 }
@@ -431,12 +463,14 @@ usage(const char* const prog)
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
+#if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
   << " Background surface:" << endl
   << "  -bkg scalarInputBkg.txt  " << endl
   << "     File with scalar values for background surface (either ascii or Freesurfer format)." << endl
   << "  -range-bkg lower upper  " << endl
   << "     Range of scalar values for background surface." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
+#endif
   << " Colors:" << endl
   << "  -opacity value  " << endl
   << "     Value for opacity of overlay." << endl
@@ -461,7 +495,7 @@ usage(const char* const prog)
   << "  -rotate x y z " << endl
   << "     Rotate xyz-axis." << endl
   << "     Default value: " << defaultRotate[0] << " " << defaultRotate[1] << " " << defaultRotate[2] << endl
-  << " Window:" << endl
+  << " Output:" << endl
   << "  -size xsize ysize  " << endl
   << "     Window size." << endl
   << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
