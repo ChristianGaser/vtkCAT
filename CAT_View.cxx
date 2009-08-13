@@ -24,7 +24,7 @@
 #include "vtkLookupTableWithEnabling.h"
 #include <float.h>
 
-typedef  enum  { JET, GRAY, HOT, COLD, HOT2, COLD2, BLUEGREEN };
+typedef  enum  { JET, GRAY, HOT, COLD, HOT2, COLD2, BLUEGREEN, GREENBLUE };
 
 static void usage(const char* const prog);
 vtkDoubleArray* readScalars(char* filename);
@@ -111,6 +111,8 @@ int main( int argc, char **argv )
     colormap = COLD2;
    else if (strcmp(argv[j], "-bluegreen") == 0) 
     colormap = BLUEGREEN;
+   else if (strcmp(argv[j], "-greenblue") == 0) 
+    colormap = GREENBLUE;
    else {
     cout << endl;
     cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
@@ -249,11 +251,17 @@ int main( int argc, char **argv )
     lookupTable->SetSaturationRange( 1.0, 1.0 );
     lookupTable->SetValueRange( 1.0, 1.0 );
     break;
+  case GREENBLUE:
+    lookupTable->SetHueRange( 0.33333, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
   }
 
   if(logScale) lookupTable->SetScaleToLog10();
   lookupTable->SetTableRange( scalarRange );
-  lookupTable->SetEnabledArray(polyDataReader->GetOutput()->GetPointData()->GetScalars());
+  if (clipRange[1] >= clipRange[0])
+    lookupTable->SetEnabledArray(polyDataReader->GetOutput()->GetPointData()->GetScalars());
   lookupTable->Build();
 
   // background surface is alway gray
@@ -418,6 +426,8 @@ usage(const char* const prog)
   << "     Use inverse cold colorbar (default jet)." << endl
   << "  -bluegreen  " << endl
   << "     Use blue-green colorbar (default jet)." << endl
+  << "  -greenblue  " << endl
+  << "     Use green-blue colorbar (default jet)." << endl
   << "  -clip lower upper  " << endl
   << "     Clip scalar values. These values will be not displayed." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
