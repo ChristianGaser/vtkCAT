@@ -95,6 +95,8 @@ int main( int argc, char **argv )
     j++; outputFileName = argv[j];
     png = 1;
    }
+   else if (strcmp(argv[j], "-left") == 0)
+    rotate[2] = 90;
    else if (strcmp(argv[j], "-log") == 0) 
     logScale = 1;
    else if (strcmp(argv[j], "-colorbar") == 0) 
