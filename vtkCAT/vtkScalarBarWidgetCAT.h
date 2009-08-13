@@ -34,6 +34,7 @@
 #define __vtkScalarBarWidgetCAT_h
 
 #include "vtkInteractorObserver.h"
+#include "vtkLookupTable.h"
 class vtkScalarBarActor;
 
 class VTK_WIDGETS_EXPORT vtkScalarBarWidgetCAT : public vtkInteractorObserver
@@ -51,6 +52,9 @@ public:
   // Description:
   // Methods for turning the interactor observer on and off.
   virtual void SetEnabled(int);
+
+  // lookupTable is needed to rescue colormap
+  vtkLookupTable *lookupTable;
 
 protected:
   vtkScalarBarWidgetCAT();
@@ -71,7 +75,7 @@ protected:
   void OnRightButtonDown();
   void OnRightButtonUp();
   void OnMouseMove();
-
+  
   // used to compute relative movements
   double StartPosition[2];
   

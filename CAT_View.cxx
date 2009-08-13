@@ -293,6 +293,7 @@ int main( int argc, char **argv )
       }
       if (colorbar == 1) {
         scalarBarWidget->SetInteractor(renderWindowInteractor);
+        scalarBarWidget->lookupTable = lookupTable;
         scalarBarWidget->GetScalarBarActor()->SetLookupTable(lookupTable);
         scalarBarWidget->GetScalarBarActor()->SetOrientationToHorizontal();
         scalarBarWidget->GetScalarBarActor()->SetWidth(0.4);

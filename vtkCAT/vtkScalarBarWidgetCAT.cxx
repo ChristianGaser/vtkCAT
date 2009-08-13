@@ -262,7 +262,14 @@ void vtkScalarBarWidgetCAT::OnMouseMove()
   if (range[0] >= range[1])
     range[0] = range[1] - 1e-3;
 
+  // set new range
   scalarBar->SetTableRange(range);
+  
+  // and rescue old values for colormap
+  scalarBar->SetHueRange(this->lookupTable->GetHueRange());
+  scalarBar->SetSaturationRange(this->lookupTable->GetSaturationRange());
+  scalarBar->SetValueRange(this->lookupTable->GetValueRange());
+  
   scalarBar->Build();
   this->ScalarBarActor->SetLookupTable(scalarBar);
 
