@@ -401,7 +401,7 @@ vtkDoubleArray* readScalars(char* filename)
   vtkDoubleArray* scalars = vtkDoubleArray::New();
   vtkFreesurferReader *FreesurferReader = vtkFreesurferReader::New();
   
-  int i, magic, nValues, fNum, valsPerVertex;
+  int i, magic, nValues, fNum, valsPerVertex, errno;
   double x;
   const int LINE_SIZE = 10240;
   char line[LINE_SIZE];
@@ -424,8 +424,11 @@ vtkDoubleArray* readScalars(char* filename)
   // BIC scalars as ascii file
   else
   {
+    rewind(fp);
     while (fgets(line, sizeof(line), fp) != NULL) {
-      if (sscanf(line, "%lf", &x) != 1) {
+      errno = 0;
+      x = strtod(line, NULL);
+      if (errno != 0) {
         cerr << "Error reading value from line " << line << " from file " << filename << endl;
         fclose(fp);
         return NULL;
