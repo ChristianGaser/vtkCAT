@@ -22,6 +22,7 @@
 #include "vtkCommand.h"
 #include "vtkMath.h"
 #include "vtkObjectFactory.h"
+#include "vtkMatrix4x4.h"
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkRenderer.h"
@@ -96,6 +97,21 @@ void vtkInteractorStyleCAT::OnChar()
       rwi->Render();
       break;
       }
+    case 'v' :    case 'V' :
+      {
+      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+      vtkMatrix4x4 *matrix;
+      // = vtkMatrix4x4::New();
+      matrix = camera->GetViewTransformMatrix();
+      cout << "TransformMatrix:" << endl;
+      for (int xi = 0; xi < 4; xi++) {
+        for (int yi = 0; yi < 4; yi++) {
+          cout << matrix->GetElement(xi,yi) << " ";
+        }
+      }
+      cout << endl;
+      break;
+      }
     case 'h' :    case 'H' :
       {
       usage();
@@ -103,17 +119,17 @@ void vtkInteractorStyleCAT::OnChar()
       }
     case 'g' :    case 'G' :
       {
-  	  vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
-	  windowToImageFilter->SetInput( rwi->GetRenderWindow() );
-                                                	
-	  vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
-	  PNGWriter->SetInput( windowToImageFilter->GetOutput() );
-	  PNGWriter->SetFileName( "render.png" );
-	  windowToImageFilter->Update();
-	  PNGWriter->Write();
-	  PNGWriter->Delete();
-	  windowToImageFilter->Delete();
-	  cout << "Save render.png" << endl;
+      vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
+      windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+                                                    
+      vtkPNGWriter *PNGWriter = vtkPNGWriter::New();
+      PNGWriter->SetInput( windowToImageFilter->GetOutput() );
+      PNGWriter->SetFileName( "render.png" );
+      windowToImageFilter->Update();
+      PNGWriter->Write();
+      PNGWriter->Delete();
+      windowToImageFilter->Delete();
+      cout << "Save render.png" << endl;
       break;
       }
     }

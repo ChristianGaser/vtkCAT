@@ -21,6 +21,9 @@
 #include "vtkWindowToImageFilter.h"
 #include <vtksys/SystemTools.hxx>
 #include "vtkErrorCode.h"
+#include "vtkMatrix4x4.h"
+#include "vtkTransform.h"
+#include "vtkCamera.h"
 
 #include "vtkInteractorStyleCAT.h"
 #include "vtkSurfaceReader.h"
@@ -63,6 +66,8 @@ int main( int argc, char **argv )
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   double rotate[3] = {defaultRotate[0], defaultRotate[1], defaultRotate[2]};
+  int definedMatrix = 0;
+  vtkMatrix4x4 *matrix = vtkMatrix4x4::New();
 
   int indx = -1;
   for (int j = 1; j < argc; j++) {
@@ -95,6 +100,15 @@ int main( int argc, char **argv )
     j++; rotate[0] = atof(argv[j]);
     j++; rotate[1] = atof(argv[j]);
     j++; rotate[2] = atof(argv[j]);
+   }
+   else if (strcmp(argv[j], "-matrix") == 0) {
+     definedMatrix = 1;
+     for (int xi = 0; xi < 4; xi++) {
+       for (int yi = 0; yi < 4; yi++) {
+         j++;
+         matrix->SetElement(xi,yi,atof(argv[j]));
+       }
+     }
    }
    else if (strcmp(argv[j], "-scalar") == 0) {
     j++; scalarFileName = argv[j];
@@ -168,6 +182,7 @@ int main( int argc, char **argv )
   vtkInteractorStyleCAT *interactorStyleCAT = vtkInteractorStyleCAT::New();
   vtkRenderWindowInteractor *renderWindowInteractor =  vtkRenderWindowInteractor::New();
   vtkRenderWindow *renderWindow = vtkRenderWindow::New();
+  vtkTransform *transform = vtkTransform::New();
 
   renderer->SetBackground( 0.0, 0.0, 0.0 );
   
@@ -208,6 +223,12 @@ int main( int argc, char **argv )
   actor->RotateZ(rotate[2]);
 
   renderer->AddActor( actor );
+
+  if(definedMatrix) {
+    matrix->Invert();
+    transform->SetMatrix(matrix);
+    renderer->GetActiveCamera()->ApplyTransform(transform);
+  }
 
   renderWindow->AddRenderer( renderer );
   renderWindow->SetSize( WindowSize[0], WindowSize[1] );
@@ -382,6 +403,7 @@ int main( int argc, char **argv )
   interactorStyleCAT->Delete();
   renderWindowInteractor->Delete();
   scalarBarWidget->Delete();
+  matrix->Delete();
 #if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
   if (scalarBkg) lookupTableBkg->Delete();
 #endif
@@ -498,6 +520,8 @@ usage(const char* const prog)
   << "  -rotate x y z " << endl
   << "     Rotate xyz-axis." << endl
   << "     Default value: " << defaultRotate[0] << " " << defaultRotate[1] << " " << defaultRotate[2] << endl
+  << "  -matrix m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12 m13 m14 m15 m16 " << endl
+  << "     Use transformation matrix (which was dump with v-key)." << endl
   << " Output:" << endl
   << "  -size xsize ysize  " << endl
   << "     Window size." << endl
@@ -514,6 +538,8 @@ usage(const char* const prog)
   << "     Show wireframe." << endl
   << "  s " << endl
   << "     Show shaded." << endl
+  << "  v " << endl
+  << "     Print transformation matrix for use with matrix flag." << endl
   << "  g " << endl
   << "     Grab image to file render.png." << endl
   << "  q e" << endl
