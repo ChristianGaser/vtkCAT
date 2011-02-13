@@ -35,8 +35,8 @@ vtkPointTopologyHelperNew::vtkPointTopologyHelperNew(vtkPolyData* polyData)
    
    vtkCellArray* polys = polyData->GetPolys();
    int cellId = 0;
-   int npts;
-   int* pts;
+   vtkIdType npts;
+   vtkIdType* pts;
    for (polys->InitTraversal(); polys->GetNextCell(npts,pts); cellId++) {
       if (npts != 3) {
          cerr << " Polygon is not a triangle in vtkPointTopologyHelperNew" 

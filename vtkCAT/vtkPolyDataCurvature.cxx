@@ -251,8 +251,8 @@ void vtkPolyDataCurvature::Execute()
    
    //printf("Number of polygons is: %d\n", numPolys);
    int cellId = 0;
-   int npts;
-   int* pts;
+   vtkIdType npts;
+   vtkIdType* pts;
    for (inPolys->InitTraversal(); inPolys->GetNextCell(npts,pts); cellId++) {
       if (npts != 3) {
          vtkErrorMacro(<<"Polygon %d is not a triangle\n");

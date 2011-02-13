@@ -175,8 +175,8 @@ vtkUtilities::GetSurfaceArea(vtkPolyData* polyDataIn)
    double area = 0.0;
    vtkCellArray *polys = polyData->GetPolys();
    int cellId = 0;
-   int npts;
-   int* pts;
+   vtkIdType npts;
+   vtkIdType* pts;
    for (polys->InitTraversal(); polys->GetNextCell(npts,pts); cellId++) {
       if (npts != 3) {
          cerr<<"Polygon "<<cellId<<" is not a triangle\n";

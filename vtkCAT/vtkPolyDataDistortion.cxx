@@ -176,8 +176,8 @@ void vtkPolyDataDistortion::Execute()
    //
    //printf("Number of polygons is: %d\n", numPolys);
    int cellId = 0;
-   int npts;
-   int* pts;
+   vtkIdType npts;
+   vtkIdType* pts;
    for (numeratorPolys->InitTraversal(); numeratorPolys->GetNextCell(npts,pts);
         cellId++) {
       if (npts != 3) {
