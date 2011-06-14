@@ -42,6 +42,7 @@ static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
 static double defaultAlpha = 1.0;
 static int defaultColorbar = 0;
+static int defaultInverse = 0;
 static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultWindowSize[2] = { 600, 600 };
@@ -59,6 +60,7 @@ int main( int argc, char **argv )
   char *outputFileName = NULL;
   int colormap = JET;
   int colorbar = defaultColorbar;
+  int inverse = defaultInverse;
   double alpha = defaultAlpha;
   int scalar = 0, scalarBkg = 0, png = 0, logScale = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
@@ -130,6 +132,8 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-opacity") == 0) {
     j++; alpha = atof(argv[j]);
    }
+   else if (strcmp(argv[j], "-inverse") == 0)
+    inverse = 1;
    else if (strcmp(argv[j], "-left") == 0)
     rotate[2] = 90;
    else if (strcmp(argv[j], "-log") == 0) 
@@ -242,6 +246,12 @@ int main( int argc, char **argv )
     cout << "Read scalars: " << scalarFileName << endl; 
     vtkDoubleArray *scalars = NULL;
     scalars = readScalars(scalarFileName);
+
+    if(inverse) {
+      for(int i=0; i < polyDataReader->GetOutput()->GetNumberOfPoints(); i++) {
+          scalars->SetValue(i,-(scalars->GetValue(i)));
+      }
+    }
     
     if(scalars == NULL) {
       cerr << "Error reading file " << scalarFileName << endl;
@@ -496,6 +506,8 @@ usage(const char* const prog)
   << "     Range of scalar values for background surface." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
 #endif
+  << "  -inverse  " << endl
+  << "     Invert input values." << endl
   << " Colors:" << endl
   << "  -opacity value  " << endl
   << "     Value for opacity of overlay." << endl
