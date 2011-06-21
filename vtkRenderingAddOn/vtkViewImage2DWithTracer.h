@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithTracer.h 1137 2009-04-03 15:31:45Z filus $
+Module:    $Id$
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2009-04-03 17:31:45 +0200 (Fr, 03 Apr 2009) $
-Version:   $Revision: 1137 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.

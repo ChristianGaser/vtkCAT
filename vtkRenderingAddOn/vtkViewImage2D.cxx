@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2D.cxx 1139 2009-04-06 09:26:29Z filus $
+Module:    $Id$
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2009-04-06 11:26:29 +0200 (Mo, 06 Apr 2009) $
-Version:   $Revision: 1139 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -83,7 +83,7 @@ PURPOSE.  See the above copyright notices for more information.
 extern int vtkrint(double a);
 
 
-vtkCxxRevisionMacro(vtkViewImage2D, "$Revision: 1139 $");
+vtkCxxRevisionMacro(vtkViewImage2D, "$Revision$");
 vtkStandardNewMacro(vtkViewImage2D);
 
 // Initialize static member that controls display convention (0: radiologic, 1: neurologic)

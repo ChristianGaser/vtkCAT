@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkMetaImageData.cxx 983 2008-10-23 17:09:08Z ntoussaint $
+Module:    $Id$
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2008-10-23 19:09:08 +0200 (Do, 23. Okt 2008) $
-Version:   $Revision: 983 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -25,7 +25,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro( vtkMetaImageData );
-vtkCxxRevisionMacro(vtkMetaImageData, "$Revision: 983 $");
+vtkCxxRevisionMacro(vtkMetaImageData, "$Revision$");
 
 
 #ifdef vtkINRIA3D_USE_ITK

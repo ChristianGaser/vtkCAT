@@ -29,7 +29,7 @@
 #include "vtkWindowToImageFilter.h"
 #include "vtkPNGWriter.h"
 
-vtkCxxRevisionMacro(vtkInteractorStyleCAT, "$Revision: 1.00 $");
+vtkCxxRevisionMacro(vtkInteractorStyleCAT, "$Revision$");
 vtkStandardNewMacro(vtkInteractorStyleCAT);
 
 static void usage();

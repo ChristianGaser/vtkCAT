@@ -28,8 +28,8 @@
   Program:   Visualization Toolkit
   Module:    $RCSfile: vtkCaretTgtSmoothPolyDataFilter.cxx,v $
   Language:  C++
-  Date:      $Date: 2002/12/17 17:12:29 $
-  Version:   $Revision: 1.2 $
+  Date:      $Date$
+  Version:   $Revision$
 
 
 Copyright (c) 1993-2000 Ken Martin, Will Schroeder, Bill Lorensen 

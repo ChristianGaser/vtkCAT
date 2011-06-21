@@ -26,7 +26,7 @@
 #include <vtkErrorCode.h>
 #include "vtkExecutive.h"
 
-vtkCxxRevisionMacro(vtkSurfaceReader, "$Revision: 1.00 $");
+vtkCxxRevisionMacro(vtkSurfaceReader, "$Revision$");
 vtkStandardNewMacro(vtkSurfaceReader);
 
 // Description:

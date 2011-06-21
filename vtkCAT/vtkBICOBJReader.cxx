@@ -24,7 +24,7 @@
 #include "vtkPolyData.h"
 #include "vtkUnsignedCharArray.h"
 
-vtkCxxRevisionMacro(vtkBICOBJReader, "$Revision: 1.00 $");
+vtkCxxRevisionMacro(vtkBICOBJReader, "$Revision$");
 vtkStandardNewMacro(vtkBICOBJReader);
 
 // Description:

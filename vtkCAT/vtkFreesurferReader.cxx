@@ -25,7 +25,7 @@
 #include "vtkByteSwap.h"
 #include "vtkUnsignedCharArray.h"
 
-vtkCxxRevisionMacro(vtkFreesurferReader, "$Revision: 1.00 $");
+vtkCxxRevisionMacro(vtkFreesurferReader, "$Revision$");
 vtkStandardNewMacro(vtkFreesurferReader);
 
 // Description:

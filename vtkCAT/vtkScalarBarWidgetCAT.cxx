@@ -23,7 +23,7 @@
 #include "vtkLookupTable.h"
 #include "vtkMapper.h"
 
-vtkCxxRevisionMacro(vtkScalarBarWidgetCAT, "$Revision: 1.7 $");
+vtkCxxRevisionMacro(vtkScalarBarWidgetCAT, "$Revision$");
 vtkStandardNewMacro(vtkScalarBarWidgetCAT);
 vtkCxxSetObjectMacro(vtkScalarBarWidgetCAT, ScalarBarActor, vtkScalarBarActor);
 

@@ -32,8 +32,8 @@ using namespace std;
   Program:   Visualization Toolkit
   Module:    $RCSfile: vtkPolyDataCurvature.cxx,v $
   Language:  C++
-  Date:      $Date: 2002/11/19 16:32:00 $
-  Version:   $Revision: 1.1.1.1 $
+  Date:      $Date$
+  Version:   $Revision$
 
 
 Copyright (c) 1993-2000 Ken Martin, Will Schroeder, Bill Lorensen

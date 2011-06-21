@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithTracer.cxx 1143 2009-04-07 13:24:19Z filus $
+Module:    $Id$
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2009-04-07 15:24:19 +0200 (Di, 07 Apr 2009) $
-Version:   $Revision: 1143 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -32,7 +32,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 #include <vtkObjectFactory.h>
 
-vtkCxxRevisionMacro(vtkViewImage2DWithTracer, "$Revision: 1143 $");
+vtkCxxRevisionMacro(vtkViewImage2DWithTracer, "$Revision$");
 vtkStandardNewMacro(vtkViewImage2DWithTracer);
 
 

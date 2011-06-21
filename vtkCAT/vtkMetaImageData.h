@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkMetaImageData.h 990 2008-10-27 09:20:25Z ntoussaint $
+Module:    $Id$
 Language:  C++
-Author:    $Author: ntoussaint $
-Date:      $Date: 2008-10-27 10:20:25 +0100 (Mo, 27. Okt 2008) $
-Version:   $Revision: 990 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.

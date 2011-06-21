@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkFillImageWithPolyData.cxx 1080 2009-02-18 13:27:02Z acanale $
+Module:    $Id$
 Language:  C++
-Author:    $Author: acanale $
-Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
-Version:   $Revision: 1080 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -30,7 +30,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 extern int vtkrint(double a);
 
-vtkCxxRevisionMacro (vtkFillImageWithPolyData, "$Revision: 1080 $");
+vtkCxxRevisionMacro (vtkFillImageWithPolyData, "$Revision$");
 vtkStandardNewMacro (vtkFillImageWithPolyData);
 
 

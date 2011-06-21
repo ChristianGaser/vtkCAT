@@ -42,7 +42,7 @@
 #include "vtkPolyDataCurvature.h"
 #include "vtkUtilities.h"
 
-vtkCxxRevisionMacro(vtkInflateSmoothPolyData, "$Revision: 1.00 $");
+vtkCxxRevisionMacro(vtkInflateSmoothPolyData, "$Revision$");
 vtkStandardNewMacro(vtkInflateSmoothPolyData);
 
 // The following code defines methods for the vtkInflateSmoothPolyData class

@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DWithOrientedPoint.cxx 1080 2009-02-18 13:27:02Z acanale $
+Module:    $Id$
 Language:  C++
-Author:    $Author: acanale $
-Date:      $Date: 2009-02-18 14:27:02 +0100 (Mi, 18 Feb 2009) $
-Version:   $Revision: 1080 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
@@ -36,7 +36,7 @@ PURPOSE.  See the above copyright notices for more information.
 
 #include <vtkObjectFactory.h>
 
-vtkCxxRevisionMacro(vtkViewImage2DWithOrientedPoint, "$Revision: 1080 $");
+vtkCxxRevisionMacro(vtkViewImage2DWithOrientedPoint, "$Revision$");
 vtkStandardNewMacro(vtkViewImage2DWithOrientedPoint);
 
 

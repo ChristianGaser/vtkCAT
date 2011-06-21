@@ -1,11 +1,11 @@
 /*=========================================================================
 
 Program:   vtkINRIA3D
-Module:    $Id: vtkViewImage2DCommand.cxx 880 2008-06-06 16:10:57Z filus $
+Module:    $Id$
 Language:  C++
-Author:    $Author: filus $
-Date:      $Date: 2008-06-06 18:10:57 +0200 (Fr, 06 Jun 2008) $
-Version:   $Revision: 880 $
+Author:    $Author$
+Date:      $Date$
+Version:   $Revision$
 
 Copyright (c) 2007 INRIA - Asclepios Project. All rights reserved.
 See Copyright.txt for details.
