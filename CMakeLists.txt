@@ -115,10 +115,7 @@ IF (USE_VTK_FILE)
   )
 
   SET(ITK_LIBS
-	itkAddOn
 	${ITK_LIBRARIES}
-	ITKIO
-	ITKBasicFilters
   )
 
   ADD_LIBRARY(vtkCAT STATIC ${vtkCAT_SRCS})
