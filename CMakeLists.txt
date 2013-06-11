@@ -39,6 +39,9 @@ ELSE(USE_ITK)
   SET(ITK_FOUND OFF)
 ENDIF(USE_ITK)
 
+FIND_PACKAGE(Qt4 REQUIRED)
+INCLUDE(${QT_USE_FILE})
+
 SET(vtkCAT_SRCS
     vtkCAT/vtkCaretTgtSmoothPolyDataFilter.cxx
     vtkCAT/vtkEllipsoidProjectPolyDataFilter.cxx
@@ -108,6 +111,8 @@ IF (USE_VTK_FILE)
     vtkCAT
     vtkVolumeRendering
     vtkHybrid
+    QVTK
+    ${QT_LIBRARIES}
   )
 
   SET(vtkRenderingAddOn_LIBS
@@ -127,38 +132,62 @@ IF (USE_VTK_FILE)
     TARGET_LINK_LIBRARIES(vtkCAT ${vtkRenderingAddOn_LIBS})
   ENDIF(USE_ITK)
   
-  ADD_EXECUTABLE(CAT_MarchingCubes CAT_MarchingCubes.cxx)  
+#  ADD_EXECUTABLE(CAT_MarchingCubes CAT_MarchingCubes.cxx)  
   ADD_EXECUTABLE(CAT_SurfSmooth CAT_SurfSmooth.cxx)  
+#  ADD_EXECUTABLE(CAT_SphereDemons CAT_SphereDemons.cxx)  
 
   IF(APPLE)
     ADD_EXECUTABLE(CAT_View MACOSX_BUNDLE CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image MACOSX_BUNDLE CAT_Image.cxx)  
+    IF(VTK_USE_QVTK)
+      ADD_EXECUTABLE(qt_SurfView MACOSX_BUNDLE qt_SurfView.cxx)  
+    ENDIF(VTK_USE_QVTK)
     ADD_CUSTOM_COMMAND(
                       TARGET CAT_Image
                       PRE_LINK
                       COMMAND mkdir -p CAT_Image.app/Contents/MacOS 
+#                      COMMAND ln -sf /Applications/CAT_Image.app/Contents/MacOS/CAT_Image /usr/local/bin/CAT_Image
                       COMMENT "Creating CAT_Image.app")
+    IF(VTK_USE_QVTK)
+      ADD_CUSTOM_COMMAND(
+                      TARGET qt_SurfView
+                      PRE_LINK
+                      COMMAND mkdir -p qt_SurfView.app/Contents/MacOS
+#                      COMMAND ln -sf /Applications/qt_SurfView.app/Contents/MacOS/qt_SurfView /usr/local/bin/qt_SurfView
+                      COMMENT "Creating qt_SurfView.app")
+    ENDIF(VTK_USE_QVTK)
     ADD_CUSTOM_COMMAND(
                       TARGET CAT_View
                       PRE_LINK
                       COMMAND mkdir -p CAT_View.app/Contents/MacOS 
+#                      COMMAND ln -sf /Applications/CAT_View.app/Contents/MacOS/CAT_View /usr/local/bin/CAT_View
                       COMMENT "Creating CAT_View.app")
   ELSE(APPLE)
     ADD_EXECUTABLE(CAT_View CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image CAT_Image.cxx)  
+    IF(VTK_USE_QVTK)
+      ADD_EXECUTABLE(qt_SurfView qt_SurfView.cxx)  
+    ENDIF(VTK_USE_QVTK)
   ENDIF(APPLE)
   ADD_EXECUTABLE(CAT_SurfInflate CAT_SurfInflate.cxx)  
+
 
   IF(APPLE)
     INSTALL(TARGETS CAT_View RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
     INSTALL(TARGETS CAT_Image RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
+    IF(VTK_USE_QVTK)
+      INSTALL(TARGETS qt_SurfView RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
+    ENDIF(VTK_USE_QVTK)
   ELSE(APPLE)
     INSTALL(PROGRAMS CAT_View DESTINATION bin)
     INSTALL(PROGRAMS CAT_Image DESTINATION bin)
+    IF(VTK_USE_QVTK)
+      INSTALL(PROGRAMS qt_SurfView DESTINATION bin)
+    ENDIF(VTK_USE_QVTK)
   ENDIF(APPLE)
   INSTALL(PROGRAMS mgz2mnc DESTINATION bin)
 
-  INSTALL(TARGETS CAT_SurfInflate CAT_SurfSmooth CAT_MarchingCubes
+  INSTALL(TARGETS CAT_SurfInflate CAT_SurfSmooth
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
     

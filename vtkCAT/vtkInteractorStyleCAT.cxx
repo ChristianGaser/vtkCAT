@@ -56,6 +56,8 @@ void vtkInteractorStyleCAT::OnChar()
     case 'e' :    case 'E' :
     case 'p' :    case 'P' :
     case 's' :    case 'S' :
+    case 't' :    case 'T' :
+    case 'j' :    case 'J' :
     case 'w' :    case 'W' :
     case 'm' :    case 'M' :
     case 'f' :    case 'F' :
@@ -159,6 +161,8 @@ usage()
   << "     Show shaded." << endl
   << "  g " << endl
   << "     Grab image to file render.png." << endl
+  << "  i " << endl
+  << "     Enable/disable colorbar." << endl
   << "  q e" << endl
   << "     Quit." << endl
   << endl

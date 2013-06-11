@@ -54,6 +54,4 @@ private:
   void operator=(const vtkInteractorStyleCAT&);
 };
 
-
-
 #endif

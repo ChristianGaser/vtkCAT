@@ -8,6 +8,8 @@
 #include <vtkActor.h>
 #include <vtkImageData.h>
 #include "vtkMINCImageReader.h"
+#include "vtkTransformPolyDataFilter.h"
+#include "vtkSmartPointer.h"
 
 #ifdef vtkCAT_USE_ITK
 #include <vtkMetaImageData.h>
@@ -16,6 +18,8 @@
 #include "vtkViewImage2D.h"
 #include "vtkViewImage3D.h"
 #include "vtkSurfaceReader.h"
+
+#define mirrorSurface 1
 
 static void usage(const char* const prog);
 
@@ -87,20 +91,46 @@ int main (int argc, char* argv[])
   vtkPolyData *polyData2 = vtkPolyData::New();
   vtkPolyData *polyData3 = vtkPolyData::New();
 
-  if (numArgs>1) 
+  /* create transformation to mirrow surfaces */
+  vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
+  transform->Scale(-1.0, 1.0, 1.0);
+  vtkTransformPolyDataFilter *st  = vtkTransformPolyDataFilter::New();
+  vtkTransformPolyDataFilter *st2 = vtkTransformPolyDataFilter::New();
+  vtkTransformPolyDataFilter *st3 = vtkTransformPolyDataFilter::New();
+
+    if (numArgs>1) 
   {
     polyDataReader->SetFileName(argv[indx+1]);
     polyDataReader->Update();
+
+#ifdef mirrorSurface
+    st -> SetInput(polyDataReader->GetOutput());
+    st -> SetTransform(transform);
+    st -> Update();
+    polyData = st->GetOutput();
+#else
     polyData = polyDataReader->GetOutput();
+#endif
+
     polyData->Update();
-    cout << "\033[22;31m" << argv[indx+1] << std::endl;
+  
+      cout << "\033[22;31m" << argv[indx+1] << std::endl;
   }
 
   if (numArgs>2) 
   {
     polyDataReader2->SetFileName(argv[indx+2]);
     polyDataReader2->Update();
+
+#ifdef mirrorSurface
+    st2 -> SetInput(polyDataReader2->GetOutput());
+    st2 -> SetTransform(transform);
+    st2 -> Update();
+    polyData2 = st2->GetOutput();
+#else
     polyData2 = polyDataReader2->GetOutput();
+#endif
+
     polyData2->Update();
     cout << "\033[22;32m" << argv[indx+2] << std::endl;
   }
@@ -109,7 +139,16 @@ int main (int argc, char* argv[])
   {
     polyDataReader3->SetFileName(argv[indx+3]);
     polyDataReader3->Update();
+
+#ifdef mirrorSurface
+    st3 -> SetInput(polyDataReader3->GetOutput());
+    st3 -> SetTransform(transform);
+    st3 -> Update();
+    polyData3 = st3->GetOutput();
+#else
     polyData3 = polyDataReader3->GetOutput();
+#endif
+
     polyData3->Update();
     cout << "\033[22;34m" << argv[indx+3] << std::endl;
   }
@@ -167,12 +206,6 @@ int main (int argc, char* argv[])
      Set some properties to the views, like the interaction style, orientation and
      background color.
    */
-
-  
-/*  view1->SetInteractionStyle (vtkViewImage2D::SELECT_INTERACTION);
-  view2->SetInteractionStyle (vtkViewImage2D::SELECT_INTERACTION);
-  view3->SetInteractionStyle (vtkViewImage2D::SELECT_INTERACTION);
-  */
 
   // One can also associate to each button (left, middle, right and even wheel)
   // a specific interaction like this:
@@ -303,6 +336,11 @@ int main (int argc, char* argv[])
   prop->Delete();
   prop2->Delete();
   prop3->Delete();
+
+  transform->Delete();
+  st->Delete();
+  st2->Delete();
+  st3->Delete();
 
   polyDataReader->Delete();
   polyDataReader2->Delete();

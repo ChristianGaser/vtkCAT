@@ -51,6 +51,7 @@ static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
 static double defaultAlpha = 1.0;
 static int defaultColorbar = 0;
+static int defaultInverse = 0;
 static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultWindowSize[2] = { 600, 600 };
@@ -66,10 +67,12 @@ int main( int argc, char **argv )
   char *scalarFileName = NULL;
   char *scalarFileNameBkg = NULL;
   char *outputFileName = NULL;
+  char *colorbarTitle = NULL;
   int colormap = JET;
   int colorbar = defaultColorbar;
+  int inverse = defaultInverse;
   double alpha = defaultAlpha;
-  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0;
+  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0, title = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
   double scalarRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
@@ -123,6 +126,10 @@ int main( int argc, char **argv )
     j++; scalarFileName = argv[j];
     scalar = 1;
    }
+   else if (strcmp(argv[j], "-title") == 0) {
+    j++; colorbarTitle = argv[j];
+    title = 1;
+   }
    else if (strcmp(argv[j], "-bkg") == 0) {
     j++; scalarFileNameBkg = argv[j];
     #if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION<4
@@ -139,6 +146,8 @@ int main( int argc, char **argv )
    else if (strcmp(argv[j], "-opacity") == 0) {
     j++; alpha = atof(argv[j]);
    }
+   else if (strcmp(argv[j], "-inverse") == 0)
+    inverse = 1;
    else if (strcmp(argv[j], "-left") == 0)
     rotate[2] = 90;
    else if (strcmp(argv[j], "-log") == 0) 
@@ -257,6 +266,7 @@ int main( int argc, char **argv )
 
   renderWindowInteractor->SetRenderWindow( renderWindow );
   renderWindowInteractor->SetInteractorStyle( interactorStyleCAT );
+//  renderWindowInteractor->Initialize();
 
   // read scalars if defined
   if (scalar) {
@@ -264,6 +274,12 @@ int main( int argc, char **argv )
     vtkDoubleArray *scalars = NULL;
     scalars = readScalars(scalarFileName);
     
+    if(inverse) {
+      for(int i=0; i < polyDataReader->GetOutput()->GetNumberOfPoints(); i++) {
+          scalars->SetValue(i,-(scalars->GetValue(i)));
+      }
+    }
+
     if(scalars == NULL) {
       cerr << "Error reading file " << scalarFileName << endl;
       return(-1);
@@ -383,8 +399,12 @@ int main( int argc, char **argv )
         scalarBarWidget->GetScalarBarActor()->SetWidth(0.4);
         scalarBarWidget->GetScalarBarActor()->SetHeight(0.075);
         scalarBarWidget->GetScalarBarActor()->SetPosition(0.3, 0.05);
-        if (scalar == 1)
-          scalarBarWidget->GetScalarBarActor()->SetTitle(scalarFileName);
+        if (scalar == 1) {
+          if (title == 0)
+            scalarBarWidget->GetScalarBarActor()->SetTitle(scalarFileName);
+          else
+            scalarBarWidget->GetScalarBarActor()->SetTitle(colorbarTitle);
+        }
         scalarBarWidget->SetEnabled(1);
         renderer->AddActor( scalarBarWidget->GetScalarBarActor() );
       }
@@ -512,6 +532,8 @@ usage(const char* const prog)
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
+ << "  -title  " << endl
+  << "     Set name for colorbar (default scalar-file)." << endl
 #if VTK_MAJOR_VERSION==5 && VTK_MINOR_VERSION>=4
   << " Background surface:" << endl
   << "  -bkg scalarInputBkg.txt  " << endl
@@ -520,6 +542,8 @@ usage(const char* const prog)
   << "     Range of scalar values for background surface." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
 #endif
+  << "  -inverse  " << endl
+  << "     Invert input values." << endl
   << " Colors:" << endl
   << "  -opacity value  " << endl
   << "     Value for opacity of overlay." << endl
