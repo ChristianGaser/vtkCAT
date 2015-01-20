@@ -15,6 +15,8 @@ SET(vtkCAT_VERSION_MINOR 1)
 SET(vtkCAT_VERSION_BUILD 0)
 SET(vtkCAT_VERSION "${vtkCAT_VERSION_MAJOR}.${vtkCAT_VERSION_MINOR}.${vtkCAT_VERSION_BUILD}")
 
+SUBDIRS(test)
+
 #--------------
 # ITK
 #--------------
@@ -23,8 +25,8 @@ IF(USE_ITK)
   FIND_PACKAGE(ITK)
   IF(ITK_FOUND)
    INCLUDE(${ITK_USE_FILE})		
-    SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -DvtkCAT_USE_ITK -DvtkINRIA3D_USE_ITK")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DvtkCAT_USE_ITK -DvtkINRIA3D_USE_ITK")
+   SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -DvtkCAT_USE_ITK -DvtkINRIA3D_USE_ITK")
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DvtkCAT_USE_ITK -DvtkINRIA3D_USE_ITK")
   ELSE(ITK_FOUND)
 	MESSAGE(FATAL_ERROR "ITK not found. Please set ITK_DIR.")
   ENDIF(ITK_FOUND)
@@ -51,6 +53,7 @@ SET(vtkCAT_SRCS
     vtkCAT/vtkPointTopologyHelper.cxx
     vtkCAT/vtkBICOBJReader.cxx
     vtkCAT/vtkSurfaceReader.cxx
+    vtkCAT/vtkGiftiReader.cxx
     vtkCAT/vtkFreesurferReader.cxx
     vtkCAT/vtkInflateSmoothPolyData.cxx
     vtkCAT/vtkInteractorStyleCAT.cxx
@@ -59,6 +62,11 @@ SET(vtkCAT_SRCS
     vtkCAT/vtkMINCImageAttributes.cxx
     vtkCAT/vtkMetaImageData.cxx
     vtkCAT/vtkMetaDataSet.cxx
+)
+
+SET(gifticlib_SRCS
+    gifticlib/gifti_io.c
+    gifticlib/gifti_xml.c
 )
 
 SET(vtkRenderingAddOn_SRCS
@@ -97,6 +105,7 @@ IF (USE_VTK_FILE)
   INCLUDE_DIRECTORIES(
     ${vtkCAT_BINARY_DIR}/vtkCAT
     ${vtkCAT_BINARY_DIR}/vtkRenderingAddOn
+    ${vtkCAT_BINARY_DIR}/gifticlib
   )
 
   LINK_LIBRARIES (
@@ -123,7 +132,7 @@ IF (USE_VTK_FILE)
 	${ITK_LIBRARIES}
   )
 
-  ADD_LIBRARY(vtkCAT STATIC ${vtkCAT_SRCS})
+  ADD_LIBRARY(vtkCAT STATIC ${vtkCAT_SRCS} ${gifticlib_SRCS})
   ADD_LIBRARY(vtkRenderingAddOn STATIC ${vtkRenderingAddOn_SRCS})
 
   IF(USE_ITK)
@@ -140,7 +149,7 @@ IF (USE_VTK_FILE)
     ADD_EXECUTABLE(CAT_View MACOSX_BUNDLE CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image MACOSX_BUNDLE CAT_Image.cxx)  
     IF(VTK_USE_QVTK)
-      ADD_EXECUTABLE(qt_SurfView MACOSX_BUNDLE qt_SurfView.cxx)  
+      ADD_EXECUTABLE(CAT_ViewQT MACOSX_BUNDLE CAT_ViewQT.cxx)  
     ENDIF(VTK_USE_QVTK)
     ADD_CUSTOM_COMMAND(
                       TARGET CAT_Image
@@ -150,11 +159,11 @@ IF (USE_VTK_FILE)
                       COMMENT "Creating CAT_Image.app")
     IF(VTK_USE_QVTK)
       ADD_CUSTOM_COMMAND(
-                      TARGET qt_SurfView
+                      TARGET CAT_ViewQT
                       PRE_LINK
-                      COMMAND mkdir -p qt_SurfView.app/Contents/MacOS
-#                      COMMAND ln -sf /Applications/qt_SurfView.app/Contents/MacOS/qt_SurfView /usr/local/bin/qt_SurfView
-                      COMMENT "Creating qt_SurfView.app")
+                      COMMAND mkdir -p CAT_ViewQT.app/Contents/MacOS
+#                      COMMAND ln -sf /Applications/CAT_ViewQT.app/Contents/MacOS/CAT_ViewQT /usr/local/bin/CAT_ViewQT
+                      COMMENT "Creating CAT_ViewQT.app")
     ENDIF(VTK_USE_QVTK)
     ADD_CUSTOM_COMMAND(
                       TARGET CAT_View
@@ -166,7 +175,7 @@ IF (USE_VTK_FILE)
     ADD_EXECUTABLE(CAT_View CAT_View.cxx)  
     ADD_EXECUTABLE(CAT_Image CAT_Image.cxx)  
     IF(VTK_USE_QVTK)
-      ADD_EXECUTABLE(qt_SurfView qt_SurfView.cxx)  
+      ADD_EXECUTABLE(CAT_ViewQT CAT_ViewQT.cxx)  
     ENDIF(VTK_USE_QVTK)
   ENDIF(APPLE)
   ADD_EXECUTABLE(CAT_SurfInflate CAT_SurfInflate.cxx)  
@@ -176,13 +185,13 @@ IF (USE_VTK_FILE)
     INSTALL(TARGETS CAT_View RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
     INSTALL(TARGETS CAT_Image RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
     IF(VTK_USE_QVTK)
-      INSTALL(TARGETS qt_SurfView RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
+      INSTALL(TARGETS CAT_ViewQT RUNTIME DESTINATION /Applications BUNDLE DESTINATION /Applications)
     ENDIF(VTK_USE_QVTK)
   ELSE(APPLE)
     INSTALL(PROGRAMS CAT_View DESTINATION bin)
     INSTALL(PROGRAMS CAT_Image DESTINATION bin)
     IF(VTK_USE_QVTK)
-      INSTALL(PROGRAMS qt_SurfView DESTINATION bin)
+      INSTALL(PROGRAMS CAT_ViewQT DESTINATION bin)
     ENDIF(VTK_USE_QVTK)
   ENDIF(APPLE)
   INSTALL(PROGRAMS mgz2mnc DESTINATION bin)

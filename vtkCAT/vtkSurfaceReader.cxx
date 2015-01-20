@@ -66,8 +66,10 @@ int vtkSurfaceReader::GetSurfaceType()
   
   if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".obj")) 
       surfaceType = 1;
-  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".vtk")) 
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".gii")) 
       surfaceType = 2;
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(this->FileName).c_str(),".vtk")) 
+      surfaceType = 3;
   return(surfaceType);
 }
 
@@ -134,6 +136,27 @@ void vtkSurfaceReader::ReadFreesurfer(char* filename)
   reader->Delete();
 }
 
+void vtkSurfaceReader::ReadGifti(char* filename)
+{
+
+  vtkGiftiReader* reader = vtkGiftiReader::New();
+  reader->SetFileName (filename);
+  
+  try
+  {
+    reader->Update();
+    this->SetFileName(reader->GetFileName());
+    this->SetOutput(reader->GetOutput());
+    this->GetOutput()->SetMaximumNumberOfPieces(1);
+  }
+  catch (vtkErrorCode::ErrorIds error)
+  {
+    reader->Delete();
+    throw error;
+  }
+  reader->Delete();
+}
+
 unsigned int vtkSurfaceReader::CanReadFile (char* filename)
 {
 
@@ -170,6 +193,23 @@ unsigned int vtkSurfaceReader::CanReadFile (char* filename)
     catch (vtkErrorCode::ErrorIds)
     {
     }
+  }
+
+  if (!strcmp(vtksys::SystemTools::GetFilenameLastExtension(filename).c_str(),".gii")) 
+  {
+    vtkGiftiReader* reader = vtkGiftiReader::New();
+    reader->SetFileName (filename);
+    try
+    {
+      reader->Update();
+    }
+    catch(vtkErrorCode::ErrorIds)
+    {
+      reader->Delete();
+      return 0;
+    }
+    reader->Delete();
+    return vtkSurfaceReader::SURFACE_TYPE_GIFTI;
   }
 
   vtkFreesurferReader* reader = vtkFreesurferReader::New();
@@ -217,6 +257,9 @@ int vtkSurfaceReader::RequestData(
 	  break;
 	case vtkSurfaceReader::SURFACE_TYPE_BICOBJ :
 	  vtkSurfaceReader::ReadBICOBJ(this->FileName);
+	  break;
+	case vtkSurfaceReader::SURFACE_TYPE_GIFTI :
+	  vtkSurfaceReader::ReadGifti(this->FileName);
 	  break;
 	case vtkSurfaceReader::SURFACE_TYPE_VTKPOLYDATA :
 	  vtkSurfaceReader::ReadVTK(this->FileName);

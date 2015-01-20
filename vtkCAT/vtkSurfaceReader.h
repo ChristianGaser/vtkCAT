@@ -24,6 +24,7 @@
 
 #include "vtkBICOBJReader.h"
 #include "vtkFreesurferReader.h"
+#include "vtkGiftiReader.h"
 #include "vtkDataReader.h"
 
 class vtkPolyData;
@@ -38,7 +39,8 @@ public:
   enum SURFACE_TYPE {
     SURFACE_TYPE_FREESURFER  = 0,
     SURFACE_TYPE_BICOBJ      = 1,    
-    SURFACE_TYPE_VTKPOLYDATA = 2
+    SURFACE_TYPE_GIFTI       = 2,    
+    SURFACE_TYPE_VTKPOLYDATA = 3
   };
 
   vtkPolyData *GetOutput();
@@ -54,6 +56,7 @@ public:
 
   void ReadBICOBJ(char* filename);
   void ReadVTK(char* filename);
+  void ReadGifti(char* filename);
   void ReadFreesurfer(char* filename);
 
 protected:
