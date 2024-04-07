@@ -24,6 +24,7 @@ find_package(VTK COMPONENTS
   CommonCore
   IOLegacy
   InteractionStyle
+  RenderingAnnotation
   RenderingContextOpenGL2
   RenderingCore
   RenderingFreeType

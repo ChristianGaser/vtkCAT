@@ -7,10 +7,18 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkPolyDataReader.h>
-#include "vtkDoubleArray.h"
+#include <vtkDoubleArray.h>
 #include <vtkPointData.h> 
-#include "vtkSurfaceReader.h"
+#include <vtkLookupTable.h>
+#include <vtkLookupTableWithEnabling.h>
+#include <vtkScalarBarActor.h>
+#include <vtkCurvatures.h>
 #include <vtksys/SystemTools.hxx>
+#include "vtkSurfaceReader.h"
+
+typedef enum ColorMap {
+    JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
+} ColorMap;
 
 vtkSmartPointer<vtkDoubleArray> readScalars(char* filename);
 
@@ -32,19 +40,19 @@ int main(int argc, char* argv[])
     return (EXIT_FAILURE);
   }
 
-  char *scalarFileNameL = NULL;
-  char *scalarFileNameR = NULL;
-  char *scalarFileNameBkg = NULL;
+  char *overlayFileNameL = NULL;
+  char *overlayFileNameR = NULL;
+  char *overlayFileNameBkg = NULL;
   char *outputFileName = NULL;
   char *colorbarTitle = NULL;
   double alpha = defaultAlpha;
-  double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
-  double scalarRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
+  double overlayRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
+  double overlayRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
-  int colormap = 1;
+  int colormap = JET;
   int colorbar = defaultColorbar;
   int inverse = defaultInverse;
-  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0, title = 0;
+  int overlay = 0, overlayBkg = 0, png = 0, logScale = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1;
 
@@ -54,12 +62,12 @@ int main(int argc, char* argv[])
       break;
    }
    else if (strcmp(argv[j], "-range") == 0) {
-     j++; scalarRange[0] = atof(argv[j]);
-     j++; scalarRange[1] = atof(argv[j]);
+     j++; overlayRange[0] = atof(argv[j]);
+     j++; overlayRange[1] = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-range-bkg") == 0) {
-     j++; scalarRangeBkg[0] = atof(argv[j]);
-     j++; scalarRangeBkg[1] = atof(argv[j]);
+     j++; overlayRangeBkg[0] = atof(argv[j]);
+     j++; overlayRangeBkg[1] = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-clip") == 0) {
      j++; clipRange[0] = atof(argv[j]);
@@ -69,18 +77,18 @@ int main(int argc, char* argv[])
      j++; WindowSize[0] = atoi(argv[j]);
      j++; WindowSize[1] = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-scalar") == 0) {
-     j++; scalarFileNameL = argv[j];
-     j++; scalarFileNameR = argv[j];
-     scalar = 1;
+   else if ((strcmp(argv[j], "-scalar") == 0) || (strcmp(argv[j], "-overlay") == 0)) {
+     j++; overlayFileNameL = argv[j];
+     j++; overlayFileNameR = argv[j];
+     overlay = 1;
    }
    else if (strcmp(argv[j], "-title") == 0) {
      j++; colorbarTitle = argv[j];
      title = 1;
    }
    else if (strcmp(argv[j], "-bkg") == 0) {
-     j++; scalarFileNameBkg = argv[j];
-     scalarBkg = 1;
+     j++; overlayFileNameBkg = argv[j];
+     overlayBkg = 1;
    }
    else if (strcmp(argv[j], "-output") == 0) {
      j++; outputFileName = argv[j];
@@ -95,6 +103,20 @@ int main(int argc, char* argv[])
      logScale = 1;
    else if (strcmp(argv[j], "-colorbar") == 0) 
      colorbar = 1;
+   else if (strcmp(argv[j], "-gray") == 0) 
+    colormap = GRAY;
+   else if (strcmp(argv[j], "-redyellow") == 0) 
+    colormap = REDYELLOW;
+   else if (strcmp(argv[j], "-bluecyan") == 0) 
+    colormap = BLUECYAN;
+   else if (strcmp(argv[j], "-yellowred") == 0) 
+    colormap = YELLOWRED;
+   else if (strcmp(argv[j], "-cyanblue") == 0) 
+    colormap = CYANBLUE;
+   else if (strcmp(argv[j], "-bluegreen") == 0) 
+    colormap = BLUEGREEN;
+   else if (strcmp(argv[j], "-greenblue") == 0) 
+    colormap = GREENBLUE;
    else {
      cout << endl;
      cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
@@ -110,28 +132,56 @@ int main(int argc, char* argv[])
 
   const int numArgs = argc - indx;
 
-  vtkSmartPointer<vtkPolyData> polyData0;
-  vtkSmartPointer<vtkPolyData> polyData1;
+  vtkSmartPointer<vtkPolyData> polyData[2];
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableBkg = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+
+  vtkSmartPointer<vtkCurvatures> curvature[2];
+  curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
+  curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
+    
+  try {
+    polyData[0] = ReadGIFTIMesh(argv[indx]);
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+  try {
+    polyData[1] = ReadGIFTIMesh(argv[indx+1]);
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  curvature[0]->SetInputData(polyData[0]);
+  curvature[0]->SetCurvatureTypeToMean();
+  curvature[0]->Update();
+  curvature[1]->SetInputData(polyData[1]);
+  curvature[1]->SetCurvatureTypeToMean();
+  curvature[1]->Update();
+
+  std::array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
+  curvaturesMesh[0] = curvature[0]->GetOutput();  
+  curvaturesMesh[1] = curvature[1]->GetOutput();  
+
+  // Create mapper
+  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
+  mapper[0] = vtkSmartPointer<vtkPolyDataMapper>::New();
+  mapper[1] = vtkSmartPointer<vtkPolyDataMapper>::New();
+
+  if (overlay) {
+    mapper[0]->SetInputData(polyData[0]);
+    mapper[1]->SetInputData(polyData[1]);
+  }
   
-  try {
-    polyData0 = ReadGIFTIMesh(argv[indx]);
-  } catch (const std::exception& e) {
-    std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-  try {
-    polyData1 = ReadGIFTIMesh(argv[indx+1]);
-  } catch (const std::exception& e) {
-    std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
+  vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
+  mapperBkg[0] = vtkSmartPointer<vtkPolyDataMapper>::New();
+  mapperBkg[1] = vtkSmartPointer<vtkPolyDataMapper>::New();
 
-  // Create a mapper
-  std::array<vtkNew<vtkPolyDataMapper>, 2> mapper;
-  mapper[0]->SetInputData(polyData0);
-  mapper[1]->SetInputData(polyData1);
+  mapperBkg[0]->SetInputData(curvaturesMesh[0]);
+  mapperBkg[1]->SetInputData(curvaturesMesh[1]);
 
-  // Create an actor
+  // Create actor
   auto const numberOfViews = 6;
   std::array<vtkNew<vtkActor>, numberOfViews> actor;
   std::array<vtkNew<vtkActor>, numberOfViews> actorBkg;
@@ -149,78 +199,161 @@ int main(int argc, char* argv[])
   {
     position[0] = positionx[i];
     position[1] = positiony[i];
-    actor[i]->SetMapper(mapper[order[i]]);
-    actor[i]->GetProperty()->SetColor(0.9, 0.9, 0.9);
-    actor[i]->GetProperty()->SetInterpolationToPBR();
+    
+    actorBkg[i]->SetMapper(mapperBkg[order[i]]);
+    actorBkg[i]->GetProperty()->SetColor(0.9, 0.9, 0.9);
+    actorBkg[i]->GetProperty()->SetInterpolationToPBR();
+  
   
     // configure the basic properties
-    actor[i]->GetProperty()->SetMetallic(0.5);
-    actor[i]->GetProperty()->SetRoughness(0.8);
-    actor[i]->AddPosition(position.data());
-    actor[i]->RotateX(rotatex[i]);
-    actor[i]->RotateY(rotatey[i]);
-    actor[i]->RotateZ(rotatez[i]);
+    actorBkg[i]->GetProperty()->SetMetallic(0.1);
+    actorBkg[i]->GetProperty()->SetRoughness(0.5);
+    actorBkg[i]->AddPosition(position.data());
+    actorBkg[i]->RotateX(rotatex[i]);
+    actorBkg[i]->RotateY(rotatey[i]);
+    actorBkg[i]->RotateZ(rotatez[i]);
+
+    if (overlay) {
+      actor[i]->SetMapper(mapper[order[i]]);
+      actor[i]->GetProperty()->SetColor(0.9, 0.9, 0.9);
+      actor[i]->GetProperty()->SetInterpolationToPBR();
+  
+      // configure the basic properties
+      actor[i]->GetProperty()->SetMetallic(0.1);
+      actor[i]->GetProperty()->SetRoughness(0.5);
+      actor[i]->AddPosition(position.data());
+      actor[i]->RotateX(rotatex[i]);
+      actor[i]->RotateY(rotatey[i]);
+      actor[i]->RotateZ(rotatez[i]);
+    }    
   }
   
   // A renderer and render window
   vtkNew<vtkRenderer> renderer;
   vtkNew<vtkRenderWindow> renderWindow;
   renderWindow->AddRenderer(renderer);
-  renderWindow->SetWindowName("Visualize");
+  renderWindow->SetWindowName("CAT_View");
   renderWindow->SetSize(defaultWindowSize[0], defaultWindowSize[1]);
 
   // read scalars if defined
-  if (scalar) {
-    cout << "Read scalars: " << scalarFileNameL << endl;
-    vtkSmartPointer<vtkDoubleArray> scalarsL = vtkSmartPointer<vtkDoubleArray>::New();
-    vtkSmartPointer<vtkDoubleArray> scalarsR = vtkSmartPointer<vtkDoubleArray>::New();
+  if (overlay) {
 
-    scalarsL = readScalars(scalarFileNameL);
-    scalarsR = readScalars(scalarFileNameR);
+    cout << "Read overlays: " << overlayFileNameL << endl;
+
+    vtkSmartPointer<vtkDoubleArray> scalars[2];
+    scalars[0] = vtkSmartPointer<vtkDoubleArray>::New();
+    scalars[1] = vtkSmartPointer<vtkDoubleArray>::New();
+
+    scalars[0] = readScalars(overlayFileNameL);
+    scalars[1] = readScalars(overlayFileNameR);
 
     if(inverse) {
-      for(int i=0; i < polyData0->GetNumberOfPoints(); i++)
-          scalarsL->SetValue(i,-(scalarsL->GetValue(i)));
-      for(int i=0; i < polyData1->GetNumberOfPoints(); i++)
-          scalarsR->SetValue(i,-(scalarsR->GetValue(i)));
+      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+          scalars[0]->SetValue(i,-(scalars[0]->GetValue(i)));
+      for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++)
+          scalars[1]->SetValue(i,-(scalars[1]->GetValue(i)));
     }
     
-    if(scalarsL == NULL) {
-      cerr << "Error reading file " << scalarFileNameL << endl;
+    if(scalars[0] == NULL) {
+      cerr << "Error reading file " << overlayFileNameL << endl;
       return(-1);
     }
-    
-    polyData0->GetPointData()->SetScalars(scalarsL);
-    polyData1->GetPointData()->SetScalars(scalarsR);
-    
+
     // clip values if defined
     if (clipRange[1] > clipRange[0]) {
-      for(int i=0; i < polyData0->GetNumberOfPoints(); i++) {
-        if((scalarsL->GetValue(i) > clipRange[0]) && (scalarsL->GetValue(i) < clipRange[1]))
-          scalarsL->SetValue(i,0);
+      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++) {
+        if((scalars[0]->GetValue(i) > clipRange[0]) && (scalars[0]->GetValue(i) < clipRange[1]))
+          scalars[0]->SetValue(i,0.0);
       }
-      for(int i=0; i < polyData1->GetNumberOfPoints(); i++) {
-        if((scalarsR->GetValue(i) > clipRange[0]) && (scalarsR->GetValue(i) < clipRange[1]))
-          scalarsR->SetValue(i,0);
+      for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++) {
+        if((scalars[1]->GetValue(i) > clipRange[0]) && (scalars[1]->GetValue(i) < clipRange[1]))
+          scalars[1]->SetValue(i,0.0);
       }
     }
+    
+    polyData[0]->GetPointData()->SetScalars(scalars[0]);
+    polyData[1]->GetPointData()->SetScalars(scalars[1]);
+    
   }
 
-  if (scalarRange[1] < scalarRange[0]) {
-    polyData0->GetScalarRange( scalarRange );
-    polyData1->GetScalarRange( scalarRange );
+  if (overlayRange[1] < overlayRange[0]) {
+    polyData[0]->GetScalarRange( overlayRange );
+    polyData[1]->GetScalarRange( overlayRange );
   }
   
-  // read scalars if defined
-/*  if (scalarBkg) {
-    cout << "Read background scalars: " << scalarFileNameBkg << endl; 
-    vtkDoubleArray *scalarsBkg = NULL;
-    scalarsBkg = readScalars(scalarFileNameBkg);
-    polyDataReaderBkg->GetOutput()->GetPointData()->SetScalars(scalarsBkg);
-    if (scalarRangeBkg[1] < scalarRangeBkg[0])
-      polyDataReaderBkg->GetOutput()->GetScalarRange( scalarRangeBkg );
+  // build colormap
+  switch(colormap) {
+  case JET:
+    lookupTable->SetHueRange( 0.667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case GRAY:
+    lookupTable->SetHueRange( 0.0, 0.0 );
+    lookupTable->SetSaturationRange( 0.0, 0.0 );
+    lookupTable->SetValueRange( 0.0, 1.0 );
+    break;
+  case REDYELLOW:
+    lookupTable->SetHueRange( 0.0, 0.1667 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case BLUECYAN:
+    lookupTable->SetHueRange( 0.66667, 0.5);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case YELLOWRED:
+    lookupTable->SetHueRange( 0.1667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case CYANBLUE:
+    lookupTable->SetHueRange( 0.5, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case BLUEGREEN:
+    lookupTable->SetHueRange( 0.66667, 0.33333);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case GREENBLUE:
+    lookupTable->SetHueRange( 0.33333, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
   }
-*/
+  
+  lookupTableBkg->SetHueRange( 0.0, 0.0 );
+  lookupTableBkg->SetSaturationRange( 0.0, 0.0 );
+  lookupTableBkg->SetValueRange( 0.0, 1.0 );
+
+  // set opacity  
+  lookupTable->SetAlphaRange( alpha, alpha );
+
+  if(logScale) lookupTable->SetScaleToLog10();
+  lookupTable->SetTableRange( overlayRange );
+  if (clipRange[1] >= clipRange[0]) {
+    lookupTable->SetEnabledArray(polyData[0]->GetPointData()->GetScalars());
+    lookupTable->SetEnabledArray(polyData[1]->GetPointData()->GetScalars());
+  }
+  lookupTable->Build();
+
+  lookupTableBkg->SetTableRange( -0.5, 0.5 );
+  lookupTableBkg->Build();
+  
+  if (overlay) {
+    mapper[0]->SetScalarRange( overlayRange );
+    mapper[1]->SetScalarRange( overlayRange );
+    mapper[0]->SetLookupTable( lookupTable );
+    mapper[1]->SetLookupTable( lookupTable );
+  }
+  
+  mapperBkg[0]->SetScalarRange( -0.5, 0.5 );
+  mapperBkg[1]->SetScalarRange( -0.5, 0.5 );
+  mapperBkg[0]->SetLookupTable( lookupTableBkg );
+  mapperBkg[1]->SetLookupTable( lookupTableBkg );
 
   // An interactor
   vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
@@ -229,11 +362,30 @@ int main(int argc, char* argv[])
   // Add the actors to the scene
   for (auto i = 0; i < actor.size(); ++i)
   {
-    renderer->AddActor(actor[i]);
+    renderer->AddActor(actorBkg[i]);
+    if (overlay) renderer->AddActor(actor[i]);
   }
 
   // Render an image (lights and cameras are created automatically)
   renderWindow->Render();
+
+  // Create the scalarBar.
+  if (colorbar == 1) {
+    vtkNew<vtkScalarBarActor> scalarBar;
+    scalarBar->SetOrientationToHorizontal();
+    scalarBar->SetLookupTable(lookupTable);
+    scalarBar->SetWidth(0.3);
+    scalarBar->SetHeight(0.05);
+    scalarBar->SetPosition(0.3, 0.05);
+    if (overlay) {
+      if (title == 0)
+        scalarBar->SetTitle("test");
+      else
+        scalarBar->SetTitle(colorbarTitle);
+    }
+    renderer->AddActor2D(scalarBar);
+  }
+
 
   // Begin mouse interaction
   renderWindowInteractor->Start();
