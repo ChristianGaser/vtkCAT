@@ -201,7 +201,6 @@ int main(int argc, char* argv[])
     position[1] = positiony[i];
     
     actorBkg[i]->SetMapper(mapperBkg[order[i]]);
-    actorBkg[i]->GetProperty()->SetColor(0.9, 0.9, 0.9);
     actorBkg[i]->GetProperty()->SetInterpolationToPBR();
   
   
@@ -215,7 +214,6 @@ int main(int argc, char* argv[])
 
     if (overlay) {
       actor[i]->SetMapper(mapper[order[i]]);
-      actor[i]->GetProperty()->SetColor(0.9, 0.9, 0.9);
       actor[i]->GetProperty()->SetInterpolationToPBR();
   
       // configure the basic properties
@@ -376,7 +374,7 @@ int main(int argc, char* argv[])
     scalarBar->SetLookupTable(lookupTable);
     scalarBar->SetWidth(0.3);
     scalarBar->SetHeight(0.05);
-    scalarBar->SetPosition(0.3, 0.05);
+    scalarBar->SetPosition(0.35, 0.05);
     if (overlay) {
       if (title == 0)
         scalarBar->SetTitle("test");
@@ -402,10 +400,9 @@ vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
     return NULL;
   }
 
-  vtkSmartPointer<vtkDoubleArray> scalars;
+  vtkSmartPointer<vtkDoubleArray> scalars = vtkSmartPointer<vtkDoubleArray>::New();
   
   int i, magic, nValues, fNum, valsPerVertex, errno;
-  double x;
   
   std::string extension =
       vtksys::SystemTools::GetFilenameLastExtension(std::string(filename));
@@ -424,12 +421,11 @@ vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
       nValues = FreadInt(fp);
       fNum = FreadInt(fp);
       valsPerVertex = FreadInt(fp);
+      scalars->SetNumberOfTuples(nValues);
   
-      for (i = 0; i < nValues; i++) {
-        x = FreadFloat(fp);
-        scalars->InsertNextValue(x);
-      }
-    }
+      for (i = 0; i < nValues; i++) 
+        scalars->SetValue(i, FreadFloat(fp));
+    } 
   }
   
   fclose(fp);
