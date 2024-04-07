@@ -16,10 +16,10 @@ vtkDoubleArray* readScalars(char* filename);
 static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
 static double defaultAlpha = 1.0;
-static int defaultColorbar = 0;
-static int defaultInverse = 0;
 static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
+static int defaultColorbar = 0;
+static int defaultInverse = 0;
 static int defaultWindowSize[2] = { 1600, 1600 };
 
 int main(int argc, char* argv[])
@@ -36,17 +36,17 @@ int main(int argc, char* argv[])
   char *scalarFileNameBkg = NULL;
   char *outputFileName = NULL;
   char *colorbarTitle = NULL;
-  int colormap = 1;
-  int colorbar = defaultColorbar;
-  int inverse = defaultInverse;
   double alpha = defaultAlpha;
-  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0, title = 0;
   double scalarRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
   double scalarRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
+  int colormap = 1;
+  int colorbar = defaultColorbar;
+  int inverse = defaultInverse;
+  int scalar = 0, scalarBkg = 0, png = 0, logScale = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
-
   int indx = -1;
+
   for (int j = 1; j < argc; j++) {
     if (argv[j][0] != '-') {
       indx = j;
@@ -112,10 +112,6 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkPolyData> polyData0;
   vtkSmartPointer<vtkPolyData> polyData1;
   
-/*  std::array<vtkNew<vtkPolyDataReader>, 2> reader;
-  reader[0]->SetFileName(argv[indx]);
-  reader[1]->SetFileName(argv[indx+1]);
-*/
   try {
     polyData0 = ReadGIFTIFile(argv[indx]);
   } catch (const std::exception& e) {
@@ -178,8 +174,6 @@ int main(int argc, char* argv[])
     vtkSmartPointer<vtkDoubleArray> scalarsL = vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> scalarsR = vtkSmartPointer<vtkDoubleArray>::New();
 
-//    vtkDoubleArray *scalarsL = NULL;
-//    vtkDoubleArray *scalarsR = NULL;
     scalarsL = readScalars(scalarFileNameL);
     scalarsR = readScalars(scalarFileNameR);
 

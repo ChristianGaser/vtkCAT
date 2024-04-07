@@ -1,2 +1,7 @@
 CMakeCache.txt
 CMakeFiles
+examples
+Makefile
+*.a
+cmake_install.cmake
+CAT_View.app 
