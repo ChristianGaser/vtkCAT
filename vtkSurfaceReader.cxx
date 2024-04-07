@@ -183,6 +183,33 @@ int Fread3(FILE *fp)
 
 }
 
+vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(char *file)
+{
+  int k, valid, numDA;
+
+  // Create a 1D array of doubles
+  vtkSmartPointer<vtkDoubleArray> vtkData = vtkSmartPointer<vtkDoubleArray>::New();
+
+  gifti_image* image = gifti_read_image (file, 1);
+  if (NULL == image) {
+    gifti_free_image (image);
+    throw std::runtime_error("ReadGIFTICurv: cannot read image");
+  }
+
+  valid = gifti_valid_gifti_image (image, 1);
+  if (valid == 0) {
+    gifti_free_image (image);
+    throw std::runtime_error("ReadGIFTICurv: GIFTI file is invalid");
+  }
+
+  vtkData->SetNumberOfTuples(image->darray[0]->dims[0]);
+    
+  for (k = 0; k < image->darray[0]->dims[0]; k++)
+    vtkData->SetValue(k, (double) gifti_get_DA_value_2D (image->darray[0], k, 0));
+
+  return vtkData;
+}
+
 vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
 {
   char line[1024];
@@ -192,14 +219,6 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
   vtkSmartPointer<vtkPolyData> vtkData = vtkSmartPointer<vtkPolyData>::New();
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
-  vtkProperty *property = vtkProperty::New();
-
-  property->SetAmbient(0.3);
-  property->SetDiffuse(0.3);
-  property->SetSpecular(0.4);
-  property->SetSpecularPower(10);
-  property->SetOpacity(1);
-  property->SetColor(1,1,1);
 
   giiDataArray* coords = NULL;
   giiDataArray* faces  = NULL;
@@ -224,7 +243,8 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
       gifti_DA_rows_cols (coords, &num_cols, &num_vertices);
 
     if (num_vertices <= 0 || num_cols != 3) {
-      throw std::runtime_error("input_gifti: malformed coords data array");
+      gifti_free_image (image);
+      throw std::runtime_error("ConvertGIFTIToVTK: malformed coords data array");
     }
 
     long long num_faces = 0;
@@ -235,12 +255,13 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
       gifti_DA_rows_cols (faces, &num_cols, &num_faces);
 
     if (num_faces <= 0 || num_cols != 3) {
-      throw std::runtime_error("input_gifti: malformed faces data array");
+      gifti_free_image (image);
+      throw std::runtime_error("ConvertGIFTIToVTK: malformed faces data array");
     }
     
     int vertex_index;
     for (vertex_index = 0; vertex_index < num_vertices; vertex_index++) {
-          for (int j=0; j<3; ++j) {
+      for (int j=0; j<3; ++j) {
         xyz[j] = (float) gifti_get_DA_value_2D (coords, vertex_index, j);
       }
           points->InsertNextPoint(xyz);
@@ -256,7 +277,8 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
       }
     }
   } else {
-    throw std::runtime_error("input_gifti: File does not contain vertices and faces!");
+    gifti_free_image (image);
+    throw std::runtime_error("ConvertGIFTIToVTK: File does not contain vertices and faces!");
   }
 
   for (numDA = 0; numDA < image->numDA; numDA++) {
@@ -267,25 +289,25 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
         (darray->intent == NIFTI_INTENT_TRIANGLE)) continue;
 
     if (darray->intent == NIFTI_INTENT_SHAPE) 
-      throw std::runtime_error("input_gifti: Reading of shape data not yet implemented.\n");
+      throw std::runtime_error("ConvertGIFTIToVTK: Reading of shape data not yet implemented.\n");
   }
 
   vtkData->SetPoints(points.GetPointer());
   vtkData->SetPolys(polys.GetPointer());
     
-    return vtkData;
+  return vtkData;
 }
 
-vtkSmartPointer<vtkPolyData> ReadGIFTIFile(const char* filename)
+vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename)
 {
   gifti_image* gimage = gifti_read_image(filename, 1);
   if (!gimage) {
-    throw std::runtime_error("Failed to read GIFTI file.");
+    throw std::runtime_error("ReadGIFTIMesh: Failed to read GIFTI file.");
   }
 
   int valid = gifti_valid_gifti_image (gimage, 1);
   if (valid == 0) {
-    throw std::runtime_error("Failed to read GIFTI file.");
+    throw std::runtime_error("ReadGIFTIMesh; Failed to read GIFTI file.");
   }
 
   auto vtkData = ConvertGIFTIToVTK(gimage);

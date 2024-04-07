@@ -3,7 +3,7 @@
 
 #include <vtkSmartPointer.h>
 #include <vtkPolyData.h>
-#include <vtkProperty.h>
+#include <vtkDoubleArray.h>
 
 // Forward declaration
 class gifti_image2;
@@ -12,7 +12,10 @@ class gifti_image2;
 vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image2* gimage);
 
 // Function to read a GIFTI file and return VTK polydata
-vtkSmartPointer<vtkPolyData> ReadGIFTIFile(const char* filename);
+vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename);
+
+// Function to read a GIFTI curv file and return VTK DoubleArray
+vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(char *file);
 
 int FreadInt(FILE *fp);
 float FreadFloat(FILE *fp);

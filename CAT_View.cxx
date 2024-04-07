@@ -10,8 +10,9 @@
 #include "vtkDoubleArray.h"
 #include <vtkPointData.h> 
 #include "vtkSurfaceReader.h"
+#include <vtksys/SystemTools.hxx>
 
-vtkDoubleArray* readScalars(char* filename);
+vtkSmartPointer<vtkDoubleArray> readScalars(char* filename);
 
 static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
@@ -26,7 +27,7 @@ int main(int argc, char* argv[])
 {
   if (argc < 3)
   {
-    std::cerr << "Usage: " << argv[0] << " left.vtk right.vtk"
+    std::cerr << "Usage: " << argv[0] << " left right"
               << std::endl;
     return (EXIT_FAILURE);
   }
@@ -113,13 +114,13 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkPolyData> polyData1;
   
   try {
-    polyData0 = ReadGIFTIFile(argv[indx]);
+    polyData0 = ReadGIFTIMesh(argv[indx]);
   } catch (const std::exception& e) {
     std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
   try {
-    polyData1 = ReadGIFTIFile(argv[indx+1]);
+    polyData1 = ReadGIFTIMesh(argv[indx+1]);
   } catch (const std::exception& e) {
     std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
     return EXIT_FAILURE;
@@ -240,7 +241,7 @@ int main(int argc, char* argv[])
   return EXIT_SUCCESS;
 }
 
-vtkDoubleArray* readScalars(char* filename)
+vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
 {
   
   FILE* fp = fopen(filename, "r");
@@ -249,41 +250,33 @@ vtkDoubleArray* readScalars(char* filename)
     return NULL;
   }
 
-  vtkDoubleArray* scalars = vtkDoubleArray::New();
+  vtkSmartPointer<vtkDoubleArray> scalars;
   
   int i, magic, nValues, fNum, valsPerVertex, errno;
   double x;
-  const int LINE_SIZE = 10240;
-  char line[LINE_SIZE];
   
-  magic = Fread3(fp);
-  
-  // freesurfer scalars
-  if (magic==16777215)
-  {
-  
-    nValues = FreadInt(fp);
-    fNum = FreadInt(fp);
-    valsPerVertex = FreadInt(fp);
+  std::string extension =
+      vtksys::SystemTools::GetFilenameLastExtension(std::string(filename));
 
-    for (i = 0; i < nValues; i++) {
-      x = FreadFloat(fp);
-      scalars->InsertNextValue(x);
-    }
-  }
-  // BIC scalars as ascii file
-  else
-  {
-    rewind(fp);
-    while (fgets(line, sizeof(line), fp) != NULL) {
-      errno = 0;
-      x = strtod(line, NULL);
-      if (errno != 0) {
-        cerr << "Error reading value from line " << line << " from file " << filename << endl;
-        fclose(fp);
-        return NULL;
+  if (extension == ".gii") {
+    scalars = ReadGIFTICurv(filename);
+  
+  } else {
+  
+    magic = Fread3(fp);
+    
+    // freesurfer scalars
+    if (magic==16777215)
+    {
+    
+      nValues = FreadInt(fp);
+      fNum = FreadInt(fp);
+      valsPerVertex = FreadInt(fp);
+  
+      for (i = 0; i < nValues; i++) {
+        x = FreadFloat(fp);
+        scalars->InsertNextValue(x);
       }
-      scalars->InsertNextValue(x);
     }
   }
   
