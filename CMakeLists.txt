@@ -23,6 +23,7 @@ find_package(VTK COMPONENTS
   CommonColor
   CommonCore
   IOLegacy
+  IOImage
   InteractionStyle
   RenderingAnnotation
   RenderingContextOpenGL2

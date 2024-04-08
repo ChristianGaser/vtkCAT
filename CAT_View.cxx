@@ -1,5 +1,4 @@
 #include <vtkActor.h>
-#include <vtkNamedColors.h>
 #include <vtkNew.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
@@ -13,6 +12,11 @@
 #include <vtkLookupTableWithEnabling.h>
 #include <vtkScalarBarActor.h>
 #include <vtkCurvatures.h>
+#include <vtkTextProperty.h>
+#include <vtkWindowToImageFilter.h>
+#include <vtkPNGWriter.h>
+#include <vtkInteractorStyle.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtksys/SystemTools.hxx>
 #include "vtkSurfaceReader.h"
 
@@ -24,12 +28,46 @@ vtkSmartPointer<vtkDoubleArray> readScalars(char* filename);
 
 static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
-static double defaultAlpha = 1.0;
+static double defaultAlpha = 0.8;
 static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultColorbar = 0;
 static int defaultInverse = 0;
+static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1600, 1600 };
+
+class CustomInteractorStyle : public vtkInteractorStyleTrackballCamera
+{
+public:
+    static CustomInteractorStyle* New();
+    vtkTypeMacro(CustomInteractorStyle, vtkInteractorStyleTrackballCamera);
+
+    // Override mouse movement
+    virtual void OnMouseMove() override
+    {
+        // Do nothing to suppress mouse movement
+    }
+
+    // Override keyboard events
+    virtual void OnKeyPress() override
+    {
+        vtkRenderWindowInteractor* rwi = this->Interactor;
+        std::string key = rwi->GetKeySym();
+        
+        // Handle custom keys; for example, if the 'a' key is pressed
+        if (key == "a")
+        {
+            // Custom action for 'a' key
+            std::cout << "The 'a' key was pressed." << std::endl;
+        }
+        else
+        {
+            // Call the parent class's OnKeyPress method to handle other keys
+            vtkInteractorStyleTrackballCamera::OnKeyPress();
+        }
+    }
+};
+vtkStandardNewMacro(CustomInteractorStyle);
 
 int main(int argc, char* argv[])
 {
@@ -49,10 +87,14 @@ int main(int argc, char* argv[])
   double overlayRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
   double overlayRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
   double clipRange[2] = {defaultClipRange[0], defaultClipRange[1]};
+  double white[3] = {1.0, 1.0, 1.0};
+  double black[3] = {0.0, 0.0, 0.0};
+  double val;
   int colormap = JET;
   int colorbar = defaultColorbar;
   int inverse = defaultInverse;
-  int overlay = 0, overlayBkg = 0, png = 0, logScale = 0, title = 0;
+  int bkg = defaultBkg;
+  int overlay = 0, overlayBkg = 0, png = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1;
 
@@ -77,9 +119,13 @@ int main(int argc, char* argv[])
      j++; WindowSize[0] = atoi(argv[j]);
      j++; WindowSize[1] = atoi(argv[j]);
    }
-   else if ((strcmp(argv[j], "-scalar") == 0) || (strcmp(argv[j], "-overlay") == 0)) {
+   else if (strcmp(argv[j], "-scalar") == 0) {
      j++; overlayFileNameL = argv[j];
      j++; overlayFileNameR = argv[j];
+     overlay = 2;
+   }
+   else if (strcmp(argv[j], "-overlay") == 0) {
+     j++; overlayFileNameL = argv[j];
      overlay = 1;
    }
    else if (strcmp(argv[j], "-title") == 0) {
@@ -99,10 +145,10 @@ int main(int argc, char* argv[])
    }
    else if (strcmp(argv[j], "-inverse") == 0)
      inverse = 1;
-   else if (strcmp(argv[j], "-log") == 0) 
-     logScale = 1;
    else if (strcmp(argv[j], "-colorbar") == 0) 
      colorbar = 1;
+   else if (strcmp(argv[j], "-white") == 0) 
+    bkg = 1;
    else if (strcmp(argv[j], "-gray") == 0) 
     colormap = GRAY;
    else if (strcmp(argv[j], "-redyellow") == 0) 
@@ -133,7 +179,9 @@ int main(int argc, char* argv[])
   const int numArgs = argc - indx;
 
   vtkSmartPointer<vtkPolyData> polyData[2];
-  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable[2];
+  lookupTable[0] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  lookupTable[1] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableBkg = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
 
   vtkSmartPointer<vtkCurvatures> curvature[2];
@@ -188,25 +236,24 @@ int main(int argc, char* argv[])
   std::array<double, 3> position{{0, 0, 0}};
   
   double shift = 180;
-  std::array<double, numberOfViews> positionx{{0, 2*shift, 0, 2*shift, shift, shift}};
+  std::array<double, numberOfViews> positionx{{0, 2*shift, 0.15*shift, 1.85*shift, shift, shift}};
   std::array<double, numberOfViews> positiony{{0, 0, shift, shift, 0.7*shift, 0.7*shift}};
   std::array<double, numberOfViews> rotatex{{270, 270, 270, 270, 0, 0}};
   std::array<double, numberOfViews> rotatey{{0, 0, 0, 0, 0, 0}};
-  std::array<double, numberOfViews> rotatez{{90, -90, 90, -90, 0, 0}};
-  std::array<int,    numberOfViews> order{{0, 1, 1, 0, 0, 1}};
+  std::array<double, numberOfViews> rotatez{{90, -90, -90, 90, 0, 0}};
+  std::array<int,    numberOfViews> order{{0, 1, 0, 1, 0, 1}};
 
   for (auto i = 0; i < actor.size(); ++i)
   {
     position[0] = positionx[i];
     position[1] = positiony[i];
     
-    actorBkg[i]->SetMapper(mapperBkg[order[i]]);
-    actorBkg[i]->GetProperty()->SetInterpolationToPBR();
-  
+    actorBkg[i]->SetMapper(mapperBkg[order[i]]);  
   
     // configure the basic properties
-    actorBkg[i]->GetProperty()->SetMetallic(0.1);
-    actorBkg[i]->GetProperty()->SetRoughness(0.5);
+    actorBkg[i]->GetProperty()->SetAmbient(0.8);
+    actorBkg[i]->GetProperty()->SetDiffuse(0.7);
+    actorBkg[i]->GetProperty()->SetSpecular(0.0);
     actorBkg[i]->AddPosition(position.data());
     actorBkg[i]->RotateX(rotatex[i]);
     actorBkg[i]->RotateY(rotatey[i]);
@@ -214,11 +261,11 @@ int main(int argc, char* argv[])
 
     if (overlay) {
       actor[i]->SetMapper(mapper[order[i]]);
-      actor[i]->GetProperty()->SetInterpolationToPBR();
   
       // configure the basic properties
-      actor[i]->GetProperty()->SetMetallic(0.1);
-      actor[i]->GetProperty()->SetRoughness(0.5);
+      actor[i]->GetProperty()->SetAmbient(0.3);
+      actor[i]->GetProperty()->SetDiffuse(0.7);
+      actor[i]->GetProperty()->SetSpecular(0.0);
       actor[i]->AddPosition(position.data());
       actor[i]->RotateX(rotatex[i]);
       actor[i]->RotateY(rotatey[i]);
@@ -230,8 +277,10 @@ int main(int argc, char* argv[])
   vtkNew<vtkRenderer> renderer;
   vtkNew<vtkRenderWindow> renderWindow;
   renderWindow->AddRenderer(renderer);
-  renderWindow->SetWindowName("CAT_View");
   renderWindow->SetSize(defaultWindowSize[0], defaultWindowSize[1]);
+
+  if (bkg) renderer->SetBackground(white);
+  else renderer->SetBackground(black);
 
   // read scalars if defined
   if (overlay) {
@@ -243,13 +292,23 @@ int main(int argc, char* argv[])
     scalars[1] = vtkSmartPointer<vtkDoubleArray>::New();
 
     scalars[0] = readScalars(overlayFileNameL);
-    scalars[1] = readScalars(overlayFileNameR);
+    
+    // if defined read right hemispheric overlay
+    if (overlay == 2)
+      scalars[1] = readScalars(overlayFileNameR);
+    else {
+      // or split the single overlay (which is merged) into left and right
+      // overlay
+      scalars[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
+      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+          scalars[1]->SetValue(i,scalars[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
+    }
 
     if(inverse) {
       for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
-          scalars[0]->SetValue(i,-(scalars[0]->GetValue(i)));
+        scalars[0]->SetValue(i,-(scalars[0]->GetValue(i)));
       for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++)
-          scalars[1]->SetValue(i,-(scalars[1]->GetValue(i)));
+        scalars[1]->SetValue(i,-(scalars[1]->GetValue(i)));
     }
     
     if(scalars[0] == NULL) {
@@ -260,11 +319,13 @@ int main(int argc, char* argv[])
     // clip values if defined
     if (clipRange[1] > clipRange[0]) {
       for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++) {
-        if((scalars[0]->GetValue(i) > clipRange[0]) && (scalars[0]->GetValue(i) < clipRange[1]))
+        val = scalars[0]->GetValue(i);
+        if (((val > clipRange[0]) && (val < clipRange[1])) || std::isnan(val))
           scalars[0]->SetValue(i,0.0);
       }
       for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++) {
-        if((scalars[1]->GetValue(i) > clipRange[0]) && (scalars[1]->GetValue(i) < clipRange[1]))
+        val = scalars[1]->GetValue(i);
+        if (((val > clipRange[0]) && (val < clipRange[1])) || std::isnan(val))
           scalars[1]->SetValue(i,0.0);
       }
     }
@@ -280,63 +341,63 @@ int main(int argc, char* argv[])
   }
   
   // build colormap
-  switch(colormap) {
-  case JET:
-    lookupTable->SetHueRange( 0.667, 0.0 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case GRAY:
-    lookupTable->SetHueRange( 0.0, 0.0 );
-    lookupTable->SetSaturationRange( 0.0, 0.0 );
-    lookupTable->SetValueRange( 0.0, 1.0 );
-    break;
-  case REDYELLOW:
-    lookupTable->SetHueRange( 0.0, 0.1667 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case BLUECYAN:
-    lookupTable->SetHueRange( 0.66667, 0.5);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case YELLOWRED:
-    lookupTable->SetHueRange( 0.1667, 0.0 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case CYANBLUE:
-    lookupTable->SetHueRange( 0.5, 0.66667);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case BLUEGREEN:
-    lookupTable->SetHueRange( 0.66667, 0.33333);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case GREENBLUE:
-    lookupTable->SetHueRange( 0.33333, 0.66667);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
+  for(int i=0; i < 2; i++) {
+    switch(colormap) {
+    case JET:
+      lookupTable[i]->SetHueRange( 0.667, 0.0 );
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case GRAY:
+      lookupTable[i]->SetHueRange( 0.0, 0.0 );
+      lookupTable[i]->SetSaturationRange( 0.0, 0.0 );
+      lookupTable[i]->SetValueRange( 0.0, 1.0 );
+      break;
+    case REDYELLOW:
+      lookupTable[i]->SetHueRange( 0.0, 0.1667 );
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case BLUECYAN:
+      lookupTable[i]->SetHueRange( 0.66667, 0.5);
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case YELLOWRED:
+      lookupTable[i]->SetHueRange( 0.1667, 0.0 );
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case CYANBLUE:
+      lookupTable[i]->SetHueRange( 0.5, 0.66667);
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case BLUEGREEN:
+      lookupTable[i]->SetHueRange( 0.66667, 0.33333);
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    case GREENBLUE:
+      lookupTable[i]->SetHueRange( 0.33333, 0.66667);
+      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
+      lookupTable[i]->SetValueRange( 1.0, 1.0 );
+      break;
+    }
+
+    // set opacity  
+    lookupTable[i]->SetAlphaRange( alpha, alpha );
+  
+    lookupTable[i]->SetTableRange( overlayRange );
+    if (clipRange[1] > clipRange[0]) {
+      lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
+    }
+    lookupTable[i]->Build();
   }
   
   lookupTableBkg->SetHueRange( 0.0, 0.0 );
   lookupTableBkg->SetSaturationRange( 0.0, 0.0 );
   lookupTableBkg->SetValueRange( 0.0, 1.0 );
-
-  // set opacity  
-  lookupTable->SetAlphaRange( alpha, alpha );
-
-  if(logScale) lookupTable->SetScaleToLog10();
-  lookupTable->SetTableRange( overlayRange );
-  if (clipRange[1] >= clipRange[0]) {
-    lookupTable->SetEnabledArray(polyData[0]->GetPointData()->GetScalars());
-    lookupTable->SetEnabledArray(polyData[1]->GetPointData()->GetScalars());
-  }
-  lookupTable->Build();
 
   lookupTableBkg->SetTableRange( -0.5, 0.5 );
   lookupTableBkg->Build();
@@ -344,8 +405,8 @@ int main(int argc, char* argv[])
   if (overlay) {
     mapper[0]->SetScalarRange( overlayRange );
     mapper[1]->SetScalarRange( overlayRange );
-    mapper[0]->SetLookupTable( lookupTable );
-    mapper[1]->SetLookupTable( lookupTable );
+    mapper[0]->SetLookupTable( lookupTable[0] );
+    mapper[1]->SetLookupTable( lookupTable[1] );
   }
   
   mapperBkg[0]->SetScalarRange( -0.5, 0.5 );
@@ -356,6 +417,9 @@ int main(int argc, char* argv[])
   // An interactor
   vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
   renderWindowInteractor->SetRenderWindow(renderWindow);
+
+  vtkSmartPointer<CustomInteractorStyle> customStyle = vtkSmartPointer<CustomInteractorStyle>::New();
+  renderWindowInteractor->SetInteractorStyle(customStyle);
   
   // Add the actors to the scene
   for (auto i = 0; i < actor.size(); ++i)
@@ -367,26 +431,49 @@ int main(int argc, char* argv[])
   // Render an image (lights and cameras are created automatically)
   renderWindow->Render();
 
+  renderWindow->SetWindowName("CAT_View");
+
   // Create the scalarBar.
   if (colorbar == 1) {
+    vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
     vtkNew<vtkScalarBarActor> scalarBar;
     scalarBar->SetOrientationToHorizontal();
-    scalarBar->SetLookupTable(lookupTable);
+    scalarBar->SetLookupTable(lookupTable[0]);
     scalarBar->SetWidth(0.3);
     scalarBar->SetHeight(0.05);
     scalarBar->SetPosition(0.35, 0.05);
-    if (overlay) {
-      if (title == 0)
-        scalarBar->SetTitle("test");
-      else
-        scalarBar->SetTitle(colorbarTitle);
-    }
+    
+    if (bkg) textProperty->SetColor(black);
+    else textProperty->SetColor(white);
+    scalarBar->GetLabelTextProperty()->ShallowCopy(textProperty);
+
+    if (title == 0) scalarBar->SetTitle(overlayFileNameL);
+    else scalarBar->SetTitle(colorbarTitle);
+    scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
+    
     renderer->AddActor2D(scalarBar);
   }
 
 
-  // Begin mouse interaction
-  renderWindowInteractor->Start();
+  // save png-file if defined
+  if (png) {
+
+    cout << "Write: " << outputFileName << endl; 
+
+    // Create a window to image filter
+    vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+    windowToImageFilter->SetInput(renderWindow);
+    windowToImageFilter->SetScale(1); // Adjust the scale of the output image if needed
+    windowToImageFilter->ReadFrontBufferOff(); // Read from the back buffer
+    windowToImageFilter->Update();
+    
+    // Create a PNG writer
+    vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();
+    writer->SetFileName(outputFileName);
+    writer->SetInputConnection(windowToImageFilter->GetOutputPort());
+    writer->Write();
+  } else renderWindowInteractor->Start(); // Begin mouse interaction otherwise
+
 
   return EXIT_SUCCESS;
 }
@@ -425,11 +512,13 @@ vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
   
       for (i = 0; i < nValues; i++) 
         scalars->SetValue(i, FreadFloat(fp));
-    } 
+    } else {
+      cerr << "Format in %s not supported." << filename << endl;
+      return NULL;
+    }
   }
   
   fclose(fp);
   return scalars;
 }
-
 
