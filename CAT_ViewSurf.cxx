@@ -19,12 +19,18 @@
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtksys/SystemTools.hxx>
 #include "vtkSurfaceReader.h"
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+namespace fs = std::__fs::filesystem;
 
 typedef enum ColorMap {
     JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
 } ColorMap;
 
-vtkSmartPointer<vtkDoubleArray> readScalars(char* filename);
+static void usage(const char* const prog);
+vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename);
 
 static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
@@ -39,47 +45,120 @@ static int defaultWindowSize[2] = { 1600, 1600 };
 class CustomInteractorStyle : public vtkInteractorStyleTrackballCamera
 {
 public:
-    static CustomInteractorStyle* New();
-    vtkTypeMacro(CustomInteractorStyle, vtkInteractorStyleTrackballCamera);
+  static CustomInteractorStyle* New();
+  vtkTypeMacro(CustomInteractorStyle, vtkInteractorStyleTrackballCamera);
 
-    // Override mouse movement
-    virtual void OnMouseMove() override
-    {
-        // Do nothing to suppress mouse movement
-    }
+  // Override mouse movement
+  virtual void OnMouseMove() override
+  {
+    // Do nothing to suppress mouse movement
+  }
 
-    // Override keyboard events
-    virtual void OnKeyPress() override
+  // Override keyboard events
+  virtual void OnKeyPress() override
+  {
+    vtkRenderWindowInteractor* rwi = this->Interactor;
+    std::string key = rwi->GetKeySym();
+    
+    // Handle custom keys; for example, if the 'a' key is pressed
+    if (key == "h")
     {
-        vtkRenderWindowInteractor* rwi = this->Interactor;
-        std::string key = rwi->GetKeySym();
-        
-        // Handle custom keys; for example, if the 'a' key is pressed
-        if (key == "a")
-        {
-            // Custom action for 'a' key
-            std::cout << "The 'a' key was pressed." << std::endl;
-        }
-        else
-        {
-            // Call the parent class's OnKeyPress method to handle other keys
-            vtkInteractorStyleTrackballCamera::OnKeyPress();
-        }
+      // Custom action for 'a' key
+      std::cout << "The 'h' key was pressed." << std::endl;
     }
+    else
+    {
+      // Call the parent class's OnKeyPress method to handle other keys
+      vtkInteractorStyleTrackballCamera::OnKeyPress();
+    }
+  }
 };
 vtkStandardNewMacro(CustomInteractorStyle);
 
+static void
+usage(const char* const prog)
+{
+  cout << endl
+  << "NAME " << endl
+  << "    " << prog << " - render left and right surfaces"<< endl
+  << "" << endl
+  << "SYNOPSIS" << endl
+  << "    " << prog << " [options] <left_surface>" << endl
+  << "" << endl
+  << "DESCRIPTION" << endl
+  << "    This program will render the left and right surfaces. Only the left hemipshere should be defined while the right is automatically selected." << endl
+  << endl
+  << "OPTIONS" << endl
+  << " Overlay:" << endl
+  << "  -scalar scalarInputLeft  " << endl
+  << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
+  << "  -overlay scalarInput  " << endl
+  << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
+  << "  -range lower upper  " << endl
+  << "     Range of scalar values." << endl
+  << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
+  << "  -clip lower upper  " << endl
+  << "     Clip scalar values. These values will be not displayed." << endl
+  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << "  -colorbar  " << endl
+  << "     Show colorbar (default no)." << endl
+  << "  -title  " << endl
+  << "     Set name for colorbar (default scalar-file)." << endl
+  << "  -inverse  " << endl
+  << "     Invert input values." << endl
+  << " Colors:" << endl
+  << "  -opacity value  " << endl
+  << "     Value for opacity of overlay." << endl
+  << "     Default value: " << defaultAlpha << endl
+  << "  -white  " << endl
+  << "     Use white background" << endl
+  << "  -gray  " << endl
+  << "     Use gray colorbar (default jet)." << endl
+  << "  -redyellow  " << endl
+  << "     Use red-yellow colorbar (default jet)." << endl
+  << "  -bluecyan  " << endl
+  << "     Use blue-cyan colorbar (default jet)." << endl
+  << "  -yellowred  " << endl
+  << "     Use yellow-red colorbar (default jet)." << endl
+  << "  -cyanblue  " << endl
+  << "     Use cyan-blue colorbar (default jet)." << endl
+  << "  -bluegreen  " << endl
+  << "     Use blue-green colorbar (default jet)." << endl
+  << "  -greenblue  " << endl
+  << "     Use green-blue colorbar (default jet)." << endl
+  << " Output:" << endl
+  << "  -size xsize ysize  " << endl
+  << "     Window size." << endl
+  << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
+  << "  -output output.png  " << endl
+  << "     Save as png-file." << endl
+  << endl
+  << "KEYBOARD INTERACTIONS" << endl
+  << "  w " << endl
+  << "     Show wireframe." << endl
+  << "  s " << endl
+  << "     Show shaded." << endl
+  << "  q e" << endl
+  << "     Quit." << endl
+  << endl
+  << "REQUIRED PARAMETERS" << endl
+  << "    <input.vtk> " << endl
+  << "" << endl
+  << "EXAMPLE" << endl
+  << "    " << prog << " -range -1 1 -scalar scalarInput.txt input.vtk" << endl
+  << endl
+  << endl;
+}
+
 int main(int argc, char* argv[])
 {
-  if (argc < 3)
+  if (argc < 2)
   {
-    std::cerr << "Usage: " << argv[0] << " left right"
-              << std::endl;
+    usage(argv[0]);
     return (EXIT_FAILURE);
   }
 
   char *overlayFileNameL = NULL;
-  char *overlayFileNameR = NULL;
   char *overlayFileNameBkg = NULL;
   char *outputFileName = NULL;
   char *colorbarTitle = NULL;
@@ -96,7 +175,8 @@ int main(int argc, char* argv[])
   int bkg = defaultBkg;
   int overlay = 0, overlayBkg = 0, png = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
-  int indx = -1;
+  int indx = -1, nMeshes;
+  bool rhExists, bothHemis;
 
   for (int j = 1; j < argc; j++) {
     if (argv[j][0] != '-') {
@@ -119,12 +199,7 @@ int main(int argc, char* argv[])
      j++; WindowSize[0] = atoi(argv[j]);
      j++; WindowSize[1] = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-scalar") == 0) {
-     j++; overlayFileNameL = argv[j];
-     j++; overlayFileNameR = argv[j];
-     overlay = 2;
-   }
-   else if (strcmp(argv[j], "-overlay") == 0) {
+   else if (strcmp(argv[j], "-scalar") == 0 || strcmp(argv[j], "-overlay") == 0) {
      j++; overlayFileNameL = argv[j];
      overlay = 1;
    }
@@ -170,9 +245,9 @@ int main(int argc, char* argv[])
      exit(1);
    }
   }
+  
   if (indx < 0) {
-    std::cerr << "Usage: " << argv[0] << " left.vtk right.vtk"
-              << std::endl;
+    usage(argv[0]);
     exit(1);
   }
 
@@ -187,47 +262,57 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkCurvatures> curvature[2];
   curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
   curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
-    
+
+  // check whether filename contains "lh." or "left" and replace filename with
+  // name for the right hemisphere and check whether the file exists  
+  std::string rhSurfName = argv[indx];
+  if (rhSurfName.find("lh.") != std::string::npos) {
+    vtksys::SystemTools::ReplaceString(rhSurfName,std::string("lh."),std::string("rh."));
+    rhExists = vtksys::SystemTools::FileExists(rhSurfName);
+  } else if (rhSurfName.find("left") != std::string::npos) {
+    std::string rhSurfName = argv[indx];
+    vtksys::SystemTools::ReplaceString(rhSurfName,std::string("left"),std::string("right"));
+    rhExists = vtksys::SystemTools::FileExists(rhSurfName);
+  } else rhExists = false;
+  
   try {
     polyData[0] = ReadGIFTIMesh(argv[indx]);
   } catch (const std::exception& e) {
     std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
-  try {
-    polyData[1] = ReadGIFTIMesh(argv[indx+1]);
-  } catch (const std::exception& e) {
-    std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  curvature[0]->SetInputData(polyData[0]);
-  curvature[0]->SetCurvatureTypeToMean();
-  curvature[0]->Update();
-  curvature[1]->SetInputData(polyData[1]);
-  curvature[1]->SetCurvatureTypeToMean();
-  curvature[1]->Update();
-
-  std::array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
-  curvaturesMesh[0] = curvature[0]->GetOutput();  
-  curvaturesMesh[1] = curvature[1]->GetOutput();  
-
-  // Create mapper
-  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
-  mapper[0] = vtkSmartPointer<vtkPolyDataMapper>::New();
-  mapper[1] = vtkSmartPointer<vtkPolyDataMapper>::New();
-
-  if (overlay) {
-    mapper[0]->SetInputData(polyData[0]);
-    mapper[1]->SetInputData(polyData[1]);
-  }
   
+  if (rhExists) {
+    try {
+      polyData[1] = ReadGIFTIMesh(rhSurfName.c_str());
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to read GIFTI file: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+    nMeshes = 2;
+  } else nMeshes = 1;
+  
+  
+  std::array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
+  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
   vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
-  mapperBkg[0] = vtkSmartPointer<vtkPolyDataMapper>::New();
-  mapperBkg[1] = vtkSmartPointer<vtkPolyDataMapper>::New();
 
-  mapperBkg[0]->SetInputData(curvaturesMesh[0]);
-  mapperBkg[1]->SetInputData(curvaturesMesh[1]);
+  for (auto i = 0; i < nMeshes; i++) {
+    curvature[i]->SetInputData(polyData[i]);
+    curvature[i]->SetCurvatureTypeToMean();
+    curvature[i]->Update();
+  
+    curvaturesMesh[i] = curvature[i]->GetOutput();  
+
+    // Create mapper
+    mapper[i] = vtkSmartPointer<vtkPolyDataMapper>::New();
+
+    if (overlay)
+      mapper[i]->SetInputData(polyData[i]);
+
+    mapperBkg[i] = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapperBkg[i]->SetInputData(curvaturesMesh[i]);
+  }
 
   // Create actor
   auto const numberOfViews = 6;
@@ -245,6 +330,9 @@ int main(int argc, char* argv[])
 
   for (auto i = 0; i < actor.size(); ++i)
   {
+    // if only left hemisphere exists, then skip display of right hemipshere
+    if ((nMeshes == 1) && (i % 2)) continue;
+    
     position[0] = positionx[i];
     position[1] = positiony[i];
     
@@ -286,62 +374,75 @@ int main(int argc, char* argv[])
   if (overlay) {
 
     cout << "Read overlays: " << overlayFileNameL << endl;
-
+    
     vtkSmartPointer<vtkDoubleArray> scalars[2];
-    scalars[0] = vtkSmartPointer<vtkDoubleArray>::New();
-    scalars[1] = vtkSmartPointer<vtkDoubleArray>::New();
+    for (auto i = 0; i < nMeshes; i++)
+      scalars[i] = vtkSmartPointer<vtkDoubleArray>::New();
 
     scalars[0] = readScalars(overlayFileNameL);
     
-    // if defined read right hemispheric overlay
-    if (overlay == 2)
-      scalars[1] = readScalars(overlayFileNameR);
-    else {
-      // or split the single overlay (which is merged) into left and right
-      // overlay
-      scalars[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
-      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
-          scalars[1]->SetValue(i,scalars[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
-    }
+    // if defined, read right hemispheric overlay
+    if ((nMeshes > 1) && rhExists) {
 
-    if(inverse) {
-      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
-        scalars[0]->SetValue(i,-(scalars[0]->GetValue(i)));
-      for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++)
-        scalars[1]->SetValue(i,-(scalars[1]->GetValue(i)));
+      // try replacing lh/left by rh/right in the overlay filename
+      std::string overlayFileNameR = overlayFileNameL;
+      if (overlayFileNameR.find("lh.") != std::string::npos) {
+        vtksys::SystemTools::ReplaceString(overlayFileNameR,std::string("lh."),std::string("rh."));
+        rhExists = vtksys::SystemTools::FileExists(overlayFileNameR);
+      } else if (rhSurfName.find("left") != std::string::npos) {
+        std::string overlayFileNameR = overlayFileNameL;
+        vtksys::SystemTools::ReplaceString(overlayFileNameR,std::string("left"),std::string("right"));
+        rhExists = vtksys::SystemTools::FileExists(overlayFileNameR);
+      } else rhExists = false;
+
+      if (rhExists)
+        scalars[1] = readScalars(overlayFileNameR.c_str());
+      else {
+        // or split the single overlay (which is merged) into left and right
+        // overlay
+        try {
+          scalars[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
+          for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+            scalars[1]->SetValue(i,scalars[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
+        } catch (const std::exception& e) {
+          cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameL << endl;
+          return(-1);
+        }
+      }
     }
     
-    if(scalars[0] == NULL) {
+    if(inverse) {
+      for (auto i = 0; i < nMeshes; i++) {
+        for (auto k = 0; k < polyData[i]->GetNumberOfPoints(); k++)
+          scalars[i]->SetValue(k,-(scalars[i]->GetValue(k)));
+      }
+    }
+    
+    if (scalars[0] == NULL) {
       cerr << "Error reading file " << overlayFileNameL << endl;
       return(-1);
     }
 
     // clip values if defined
     if (clipRange[1] > clipRange[0]) {
-      for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++) {
-        val = scalars[0]->GetValue(i);
-        if (((val > clipRange[0]) && (val < clipRange[1])) || std::isnan(val))
-          scalars[0]->SetValue(i,0.0);
-      }
-      for(int i=0; i < polyData[1]->GetNumberOfPoints(); i++) {
-        val = scalars[1]->GetValue(i);
-        if (((val > clipRange[0]) && (val < clipRange[1])) || std::isnan(val))
-          scalars[1]->SetValue(i,0.0);
+      for (auto i = 0; i < nMeshes; i++) {
+        for (auto k = 0; k < polyData[0]->GetNumberOfPoints(); k++) {
+          val = scalars[i]->GetValue(k);
+          if (((val > clipRange[0]) && (val < clipRange[1])) || std::isnan(val))
+            scalars[i]->SetValue(k,0.0);
+        }
       }
     }
     
-    polyData[0]->GetPointData()->SetScalars(scalars[0]);
-    polyData[1]->GetPointData()->SetScalars(scalars[1]);
-    
-  }
-
-  if (overlayRange[1] < overlayRange[0]) {
-    polyData[0]->GetScalarRange( overlayRange );
-    polyData[1]->GetScalarRange( overlayRange );
+    for (auto i = 0; i < nMeshes; i++) {
+      polyData[i]->GetPointData()->SetScalars(scalars[i]);
+      if (overlayRange[1] < overlayRange[0])
+        polyData[i]->GetScalarRange( overlayRange );
+    }
   }
   
   // build colormap
-  for(int i=0; i < 2; i++) {
+  for (auto i = 0; i < nMeshes; i++) {
     switch(colormap) {
     case JET:
       lookupTable[i]->SetHueRange( 0.667, 0.0 );
@@ -402,18 +503,16 @@ int main(int argc, char* argv[])
   lookupTableBkg->SetTableRange( -0.5, 0.5 );
   lookupTableBkg->Build();
   
-  if (overlay) {
-    mapper[0]->SetScalarRange( overlayRange );
-    mapper[1]->SetScalarRange( overlayRange );
-    mapper[0]->SetLookupTable( lookupTable[0] );
-    mapper[1]->SetLookupTable( lookupTable[1] );
+  for (auto i = 0; i < nMeshes; i++) {
+    if (overlay) {
+      mapper[i]->SetScalarRange( overlayRange );
+      mapper[i]->SetLookupTable( lookupTable[i] );
+    }
+    
+    mapperBkg[i]->SetScalarRange( -0.5, 0.5 );
+    mapperBkg[i]->SetLookupTable( lookupTableBkg );
   }
   
-  mapperBkg[0]->SetScalarRange( -0.5, 0.5 );
-  mapperBkg[1]->SetScalarRange( -0.5, 0.5 );
-  mapperBkg[0]->SetLookupTable( lookupTableBkg );
-  mapperBkg[1]->SetLookupTable( lookupTableBkg );
-
   // An interactor
   vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
   renderWindowInteractor->SetRenderWindow(renderWindow);
@@ -427,11 +526,6 @@ int main(int argc, char* argv[])
     renderer->AddActor(actorBkg[i]);
     if (overlay) renderer->AddActor(actor[i]);
   }
-
-  // Render an image (lights and cameras are created automatically)
-  renderWindow->Render();
-
-  renderWindow->SetWindowName("CAT_View");
 
   // Create the scalarBar.
   if (colorbar == 1) {
@@ -447,13 +541,25 @@ int main(int argc, char* argv[])
     else textProperty->SetColor(white);
     scalarBar->GetLabelTextProperty()->ShallowCopy(textProperty);
 
-    if (title == 0) scalarBar->SetTitle(overlayFileNameL);
+    fs::path filePath(overlayFileNameL);
+
+    // Obtain the folder name (directory path)
+    fs::path folderName = filePath.parent_path();
+
+    // Obtain the basename (filename with extension)
+    fs::path baseName = filePath.filename();
+    
+    if (title == 0) scalarBar->SetTitle(baseName.c_str());
     else scalarBar->SetTitle(colorbarTitle);
     scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
     
     renderer->AddActor2D(scalarBar);
   }
 
+  // Render an image (lights and cameras are created automatically)
+  renderWindow->Render();
+
+  renderWindow->SetWindowName("CAT_View");
 
   // save png-file if defined
   if (png) {
@@ -478,7 +584,7 @@ int main(int argc, char* argv[])
   return EXIT_SUCCESS;
 }
 
-vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
+vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename)
 {
   
   FILE* fp = fopen(filename, "r");
@@ -490,12 +596,28 @@ vtkSmartPointer<vtkDoubleArray> readScalars(char* filename)
   vtkSmartPointer<vtkDoubleArray> scalars = vtkSmartPointer<vtkDoubleArray>::New();
   
   int i, magic, nValues, fNum, valsPerVertex, errno;
+  double x;
+  const int LINE_SIZE = 10240;
+  char line[LINE_SIZE];
   
   std::string extension =
       vtksys::SystemTools::GetFilenameLastExtension(std::string(filename));
 
   if (extension == ".gii") {
     scalars = ReadGIFTICurv(filename);
+  } else if (extension == ".txt") {
+
+    rewind(fp);
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      errno = 0;
+      x = strtod(line, NULL);
+      if (errno != 0) {
+        cerr << "Error reading value from line " << line << " from file " << filename << endl;
+        fclose(fp);
+        return NULL;
+      }
+      scalars->InsertNextValue(x);
+    }
   
   } else {
   
