@@ -15,7 +15,7 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image2* gimage);
 vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename);
 
 // Function to read a GIFTI curv file and return VTK DoubleArray
-vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(char *file);
+vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(const char *file);
 
 int FreadInt(FILE *fp);
 float FreadFloat(FILE *fp);

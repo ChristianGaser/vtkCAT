@@ -183,7 +183,7 @@ int Fread3(FILE *fp)
 
 }
 
-vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(char *file)
+vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(const char *file)
 {
   int k, valid, numDA;
 
