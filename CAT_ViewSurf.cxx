@@ -60,11 +60,21 @@ public:
     vtkRenderWindowInteractor* rwi = this->Interactor;
     std::string key = rwi->GetKeySym();
     
-    // Handle custom keys; for example, if the 'a' key is pressed
-    if (key == "h")
+    // Handle custom keys; for example, if the 'g' key is pressed
+    if (key == "g")
     {
-      // Custom action for 'a' key
-      std::cout << "The 'h' key was pressed." << std::endl;
+      // Custom action for 'g' key
+      vtkWindowToImageFilter *windowToImageFilter = vtkWindowToImageFilter::New();
+      windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+      vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();
+      writer->SetFileName("render.png");
+      writer->SetInputConnection(windowToImageFilter->GetOutputPort());
+      writer->Write();
+      cout << "Save render.png" << endl;
+    } else if (key == "h")
+    {
+      // Custom action for 'h' key
+      usage("CAT_ViewSurf");
     }
     else
     {
@@ -320,9 +330,9 @@ int main(int argc, char* argv[])
   std::array<vtkNew<vtkActor>, numberOfViews> actorBkg;
   std::array<double, 3> position{{0, 0, 0}};
   
-  double shift = 180;
-  std::array<double, numberOfViews> positionx{{0, 2*shift, 0.15*shift, 1.85*shift, shift, shift}};
-  std::array<double, numberOfViews> positiony{{0, 0, shift, shift, 0.7*shift, 0.7*shift}};
+  double shift[2] = {180.0, 180.0};
+  std::array<double, numberOfViews> positionx{{0, 2*shift[0], 0.15*shift[0], 1.85*shift[0], shift[0], shift[0]}};
+  std::array<double, numberOfViews> positiony{{0, 0, 0.8*shift[1], 0.8*shift[1], 0.6*shift[1], 0.6*shift[1]}};
   std::array<double, numberOfViews> rotatex{{270, 270, 270, 270, 0, 0}};
   std::array<double, numberOfViews> rotatey{{0, 0, 0, 0, 0, 0}};
   std::array<double, numberOfViews> rotatez{{90, -90, -90, 90, 0, 0}};
@@ -365,7 +375,7 @@ int main(int argc, char* argv[])
   vtkNew<vtkRenderer> renderer;
   vtkNew<vtkRenderWindow> renderWindow;
   renderWindow->AddRenderer(renderer);
-  renderWindow->SetSize(defaultWindowSize[0], defaultWindowSize[1]);
+  renderWindow->SetSize(WindowSize[0], WindowSize[1]);
 
   if (bkg) renderer->SetBackground(white);
   else renderer->SetBackground(black);
@@ -489,10 +499,10 @@ int main(int argc, char* argv[])
     // set opacity  
     lookupTable[i]->SetAlphaRange( alpha, alpha );
   
-    lookupTable[i]->SetTableRange( overlayRange );
-    if (clipRange[1] > clipRange[0]) {
+    if (overlayRange[1] > overlayRange[0])
+      lookupTable[i]->SetTableRange( overlayRange );
+    if (clipRange[1] > clipRange[0])
       lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
-    }
     lookupTable[i]->Build();
   }
   
