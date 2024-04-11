@@ -19,6 +19,8 @@
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtksys/SystemTools.hxx>
 #include "vtkSurfaceReader.h"
+#include "vtkCustomInteractorStyle.h"
+#include "vtkStat.h"
 #include "vtkCamera.h"
 #include <filesystem>
 #include <iostream>
@@ -33,7 +35,6 @@ typedef enum ColorMap {
 } ColorMap;
 
 static void usage(const char* const prog);
-vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename);
 
 static double defaultScalarRange[2] = { 0.0, -1.0 };
 static double defaultScalarRangeBkg[2] = { 0.0, -1.0 };
@@ -44,109 +45,6 @@ static int defaultColorbar = 0;
 static int defaultInverse = 0;
 static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1750, 1000 };
-
-class CustomInteractorStyle : public vtkInteractorStyleTrackballCamera
-{
-public:
-  static CustomInteractorStyle* New();
-  vtkTypeMacro(CustomInteractorStyle, vtkInteractorStyleTrackballCamera);
-
-  // Override mouse movement
-  virtual void OnMouseMove() override
-  {
-    // Do nothing to suppress mouse movement
-  }
-
-  // Override keyboard events
-  virtual void OnChar() override
-  {
-    vtkRenderWindowInteractor* rwi = this->Interactor;
-
-    switch (rwi->GetKeyCode())
-    {
-        // use some of the old keycodes
-      case 'Q' :    case 'q' :
-      case 'e' :    case 'E' :
-      case 'p' :    case 'P' :
-      case 's' :    case 'S' :
-      case 't' :    case 'T' :
-      case 'j' :    case 'J' :
-      case 'w' :    case 'W' :
-      case 'm' :    case 'M' :
-      case 'f' :    case 'F' :
-        vtkInteractorStyle::OnChar();
-        break;
-      case 'u' :    case 'U' :
-      {
-        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-        if (this->Interactor->GetShiftKey()) camera->Elevation(1.0);
-        else if (this->Interactor->GetControlKey()) camera->Elevation(180);
-        else camera->Elevation(45.0);
-        camera->OrthogonalizeViewUp();
-        rwi->Render();
-        break;
-      }
-      case 'd' :    case 'D' :
-      {
-        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-        if (this->Interactor->GetShiftKey()) camera->Elevation(-1.0);
-        else if (this->Interactor->GetControlKey()) camera->Elevation(-180);
-        else camera->Elevation(-45.0);
-        camera->OrthogonalizeViewUp();
-        rwi->Render();
-        break;
-      }
-      case 'l' :    case 'L' :
-      {
-        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-        if (this->Interactor->GetShiftKey()) camera->Azimuth(1.0);
-        else if (this->Interactor->GetControlKey()) camera->Azimuth(180);
-        else camera->Azimuth(45.0);
-        camera->OrthogonalizeViewUp();
-        rwi->Render();
-        break;
-      }
-      case 'r' :    case 'R' :
-      {
-        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-        if (this->Interactor->GetShiftKey()) camera->Azimuth(-1.0);
-        else if (this->Interactor->GetControlKey()) camera->Azimuth(180);
-        else camera->Azimuth(-45.0);
-        camera->OrthogonalizeViewUp();
-        rwi->Render();
-        break;
-      }
-      case 'g' :
-      {
-        string strTmp = rwi->GetRenderWindow()->GetWindowName();
-        vtksys::SystemTools::ReplaceString(strTmp,string(".gii"),string(""));
-        vtksys::SystemTools::ReplaceString(strTmp,string(".txt"),string(""));
-    
-        string extension = ".png";
-    
-        // Adding extension using simple concatenation
-        string fullFilename = strTmp + extension;
-  
-        vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
-        windowToImageFilter->SetInput( rwi->GetRenderWindow() );
-        windowToImageFilter->Update();  // Ensure the filter processes the current render window content
-        vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();      
-        writer->SetFileName(fullFilename.c_str());
-        writer->SetInputConnection(windowToImageFilter->GetOutputPort());
-        writer->Write();
-        cout << "Save " << fullFilename << endl;
-        break;
-      }
-      case 'h' :
-      {
-        usage("CAT_ViewSurf");
-        break;
-      }
-    }
-
-  }
-};
-vtkStandardNewMacro(CustomInteractorStyle);
 
 static void
 usage(const char* const prog)
@@ -237,7 +135,7 @@ usage(const char* const prog)
   << endl
   << "  3   Stereo view." << endl
   << endl
-  << "  g   Save image as render.png." << endl
+  << "  g   Save image png-file." << endl
   << endl
   << "  f   Zoom to selected point." << endl
   << endl
@@ -250,67 +148,6 @@ usage(const char* const prog)
   << "    " << prog << " -range -1 1 -overlay overlayInput.txt lh.central.freesurfer.gii" << endl
   << endl
   << endl;
-}
-
-void quicksort(vtkSmartPointer<vtkDoubleArray> arr, int start, int end) {
-  if (end > start + 1) {
-    double pivot = arr->GetValue(start);
-    int left = start + 1, right = end;
-    while (left < right) {
-      if (arr->GetValue(left) <= pivot) {
-        left++;
-      } else {
-        double temp = arr->GetValue(left);
-        arr->SetValue(left, arr->GetValue(--right));
-        arr->SetValue(right, temp);
-      }
-    }
-    double temp = arr->GetValue(--left);
-    arr->SetValue(left, arr->GetValue(start));
-    arr->SetValue(start, temp);
-    quicksort(arr, start, left);
-    quicksort(arr, right, end);
-  }
-}
-
-double get_median(vtkSmartPointer<vtkDoubleArray> arr) {
-  int n = arr->GetNumberOfTuples();
-  quicksort(arr, 0, n);
-
-  if (n % 2 != 0)
-    return arr->GetValue(n / 2);
-  else
-    return (arr->GetValue((n - 1) / 2) + arr->GetValue(n / 2)) / 2.0;
-}
-
-double get_sum(vtkSmartPointer<vtkDoubleArray> arr) {
-  double sum = 0.0;
-  for(vtkIdType i = 0; i < arr->GetNumberOfTuples(); ++i) {
-    double value = arr->GetValue(i);
-    if (!std::isnan(value)) // Check if the value is not NaN
-        sum += value;
-  }
-  return sum;
-}
-
-double get_mean(vtkSmartPointer<vtkDoubleArray> arr) {
-  int n = arr->GetNumberOfTuples();
-  return get_sum(arr) / static_cast<double>(n);
-}
-
-double get_std(vtkSmartPointer<vtkDoubleArray> arr) {
-  int n = arr->GetNumberOfTuples();
-  double mean = get_mean(arr);
-  double variance = 0.0;
-  
-  for(vtkIdType i = 0; i < arr->GetNumberOfTuples(); ++i) {
-    double value = arr->GetValue(i);
-    if (!std::isnan(value)) // Check if the value is not NaN
-      variance += (value - mean) * (value - mean);
-  }
-  variance /= static_cast<double>(n);
-
-  return std::sqrt(variance);
 }
 
 int main(int argc, char* argv[])
@@ -768,7 +605,7 @@ int main(int argc, char* argv[])
     renderer->AddActor2D(scalarBar);
   }
 
-  // Zoom in to remove black borders
+  // Zoom in to remove large empty areas
   renderer->ResetCamera();
   renderer->GetActiveCamera()->Zoom(2.0); // Adjust the zoom factor as needed
 
@@ -812,64 +649,5 @@ int main(int argc, char* argv[])
 
 
   return EXIT_SUCCESS;
-}
-
-vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename)
-{
-  
-  FILE* fp = fopen(filename, "r");
-  if (fp == NULL) {
-    cerr << "Unable to open " << filename << endl;
-    return NULL;
-  }
-
-  vtkSmartPointer<vtkDoubleArray> scalars = vtkSmartPointer<vtkDoubleArray>::New();
-  
-  int i, magic, nValues, fNum, valsPerVertex, errno;
-  double x;
-  const int LINE_SIZE = 10240;
-  char line[LINE_SIZE];
-  
-  string extension =
-      vtksys::SystemTools::GetFilenameLastExtension(string(filename));
-
-  if (extension == ".gii") {
-    scalars = ReadGIFTICurv(filename);
-  } else if (extension == ".txt") {
-
-    rewind(fp);
-    while (fgets(line, sizeof(line), fp) != NULL) {
-      errno = 0;
-      x = strtod(line, NULL);
-      if (errno != 0) {
-        cerr << "Error reading value from line " << line << " from file " << filename << endl;
-        fclose(fp);
-        return NULL;
-      }
-      scalars->InsertNextValue(x);
-    }
-  
-  } else {
-  
-    magic = Fread3(fp);
-    
-    // freesurfer scalars
-    if (magic==16777215)
-    {
-      nValues = FreadInt(fp);
-      fNum = FreadInt(fp);
-      valsPerVertex = FreadInt(fp);
-      scalars->SetNumberOfTuples(nValues);
-  
-      for (i = 0; i < nValues; i++) 
-        scalars->SetValue(i, FreadFloat(fp));
-    } else {
-      cerr << "Format in %s not supported." << filename << endl;
-      return NULL;
-    }
-  }
-  
-  fclose(fp);
-  return scalars;
 }
 

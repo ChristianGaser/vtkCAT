@@ -314,3 +314,63 @@ vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename)
   gifti_free_image(gimage);
   return vtkData;
 }
+
+vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename)
+{
+  
+  FILE* fp = fopen(filename, "r");
+  if (fp == NULL) {
+    cerr << "Unable to open " << filename << endl;
+    return NULL;
+  }
+
+  vtkSmartPointer<vtkDoubleArray> scalars = vtkSmartPointer<vtkDoubleArray>::New();
+  
+  int i, magic, nValues, fNum, valsPerVertex, errno;
+  double x;
+  const int LINE_SIZE = 10240;
+  char line[LINE_SIZE];
+  
+  string extension =
+      vtksys::SystemTools::GetFilenameLastExtension(string(filename));
+
+  if (extension == ".gii") {
+    scalars = ReadGIFTICurv(filename);
+  } else if (extension == ".txt") {
+
+    rewind(fp);
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      errno = 0;
+      x = strtod(line, NULL);
+      if (errno != 0) {
+        cerr << "Error reading value from line " << line << " from file " << filename << endl;
+        fclose(fp);
+        return NULL;
+      }
+      scalars->InsertNextValue(x);
+    }
+  
+  } else {
+  
+    magic = Fread3(fp);
+    
+    // freesurfer scalars
+    if (magic==16777215)
+    {
+      nValues = FreadInt(fp);
+      fNum = FreadInt(fp);
+      valsPerVertex = FreadInt(fp);
+      scalars->SetNumberOfTuples(nValues);
+  
+      for (i = 0; i < nValues; i++) 
+        scalars->SetValue(i, FreadFloat(fp));
+    } else {
+      cerr << "Format in %s not supported." << filename << endl;
+      return NULL;
+    }
+  }
+  
+  fclose(fp);
+  return scalars;
+}
+

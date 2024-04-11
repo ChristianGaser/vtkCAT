@@ -4,6 +4,9 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyData.h>
 #include <vtkDoubleArray.h>
+#include <string>
+
+using namespace std;
 
 // Forward declaration
 class gifti_image2;
@@ -14,8 +17,8 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image2* gimage);
 // Function to read a GIFTI file and return VTK polydata
 vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename);
 
-// Function to read a GIFTI curv file and return VTK DoubleArray
-vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(const char *file);
+// Function to read curv file and return VTK DoubleArray
+vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename);
 
 int FreadInt(FILE *fp);
 float FreadFloat(FILE *fp);
