@@ -58,64 +58,92 @@ public:
   }
 
   // Override keyboard events
-  virtual void OnKeyPress() override
+  virtual void OnChar() override
   {
     vtkRenderWindowInteractor* rwi = this->Interactor;
-    string key = rwi->GetKeySym();
-    string filename = vtksys::SystemTools::GetFilenameWithoutExtension(rwi->GetRenderWindow()->GetWindowName());
 
-    string extension = ".png";
-
-    // Adding extension using simple concatenation
-    string fullFilename = filename + extension;    
+    switch (rwi->GetKeyCode())
+    {
+        // use some of the old keycodes
+      case 'Q' :    case 'q' :
+      case 'e' :    case 'E' :
+      case 'p' :    case 'P' :
+      case 's' :    case 'S' :
+      case 't' :    case 'T' :
+      case 'j' :    case 'J' :
+      case 'w' :    case 'W' :
+      case 'm' :    case 'M' :
+      case 'f' :    case 'F' :
+        vtkInteractorStyle::OnChar();
+        break;
+      case 'u' :    case 'U' :
+      {
+        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+        if (this->Interactor->GetShiftKey()) camera->Elevation(1.0);
+        else if (this->Interactor->GetControlKey()) camera->Elevation(180);
+        else camera->Elevation(45.0);
+        camera->OrthogonalizeViewUp();
+        rwi->Render();
+        break;
+      }
+      case 'd' :    case 'D' :
+      {
+        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+        if (this->Interactor->GetShiftKey()) camera->Elevation(-1.0);
+        else if (this->Interactor->GetControlKey()) camera->Elevation(-180);
+        else camera->Elevation(-45.0);
+        camera->OrthogonalizeViewUp();
+        rwi->Render();
+        break;
+      }
+      case 'l' :    case 'L' :
+      {
+        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+        if (this->Interactor->GetShiftKey()) camera->Azimuth(1.0);
+        else if (this->Interactor->GetControlKey()) camera->Azimuth(180);
+        else camera->Azimuth(45.0);
+        camera->OrthogonalizeViewUp();
+        rwi->Render();
+        break;
+      }
+      case 'r' :    case 'R' :
+      {
+        vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+        if (this->Interactor->GetShiftKey()) camera->Azimuth(-1.0);
+        else if (this->Interactor->GetControlKey()) camera->Azimuth(180);
+        else camera->Azimuth(-45.0);
+        camera->OrthogonalizeViewUp();
+        rwi->Render();
+        break;
+      }
+      case 'g' :
+      {
+        string strTmp = rwi->GetRenderWindow()->GetWindowName();
+        vtksys::SystemTools::ReplaceString(strTmp,string(".gii"),string(""));
+        vtksys::SystemTools::ReplaceString(strTmp,string(".txt"),string(""));
     
-    // Handle custom keys; for example, if the 'g' key is pressed
-    if (key == "g")
-    {
-      // Custom action for 'g' key
-      vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
-      windowToImageFilter->SetInput( rwi->GetRenderWindow() );
-      vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();      
-      writer->SetFileName(fullFilename.c_str());
-      writer->SetInputConnection(windowToImageFilter->GetOutputPort());
-      writer->Write();
-      cout << "Save " << fullFilename << endl;
-    } else if ((key == "l") || (key == "L"))
-    {
-      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-      if (this->Interactor->GetShiftKey()) camera->Azimuth(1.0);
-      else camera->Azimuth(45.0);
-      camera->OrthogonalizeViewUp();
-      rwi->Render();
-    } else if ((key == "u") || (key == "U"))
-    {
-      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-      if (this->Interactor->GetShiftKey()) camera->Elevation(1.0);
-      else camera->Elevation(45.0);
-      camera->OrthogonalizeViewUp();
-      rwi->Render();
-    } else if ((key == "d") || (key == "D"))
-    {
-      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-      if (this->Interactor->GetShiftKey()) camera->Elevation(-1.0);
-      else camera->Elevation(-45.0);
-      camera->OrthogonalizeViewUp();
-      rwi->Render();
-    } else if (key == "o")
-    {
-      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-      this->CurrentRenderer->ResetCamera();
-      camera->Zoom(2.0); // Adjust the zoom factor as needed
-      rwi->Render();
-    } else if (key == "h")
-    {
-      // Custom action for 'h' key
-      usage("CAT_ViewSurf");
-    } else
-    {
-      // Call the parent class's OnKeyPress method to handle other keys
-      vtkInteractorStyleTrackballCamera::OnKeyPress();
+        string extension = ".png";
+    
+        // Adding extension using simple concatenation
+        string fullFilename = strTmp + extension;
+  
+        vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+        windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+        windowToImageFilter->Update();  // Ensure the filter processes the current render window content
+        vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();      
+        writer->SetFileName(fullFilename.c_str());
+        writer->SetInputConnection(windowToImageFilter->GetOutputPort());
+        writer->Write();
+        cout << "Save " << fullFilename << endl;
+        break;
+      }
+      case 'h' :
+      {
+        usage("CAT_ViewSurf");
+        break;
+      }
     }
+
   }
 };
 vtkStandardNewMacro(CustomInteractorStyle);
@@ -190,9 +218,19 @@ usage(const char* const prog)
   << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
   << endl
   << "  -output output.png  " << endl
-  << "     Save as png-file or use NULL to save image with the overlay or mesh name as png." << endl
+  << "     Save as png-file or skip extension to save image with the overlay or mesh name as png." << endl
   << endl
   << "KEYBOARD INTERACTIONS" << endl
+  << "      Use Shift-key for small rotations and Ctrl/Cmd-key for flipping." << endl
+  << endl
+  << "  l L Rotate left." << endl
+  << endl
+  << "  r R Rotate right." << endl
+  << endl
+  << "  u U Rotate up." << endl
+  << endl
+  << "  d D Rotate down." << endl
+  << endl
   << "  w   Show wireframe." << endl
   << endl
   << "  s   Show shaded." << endl
@@ -286,7 +324,7 @@ int main(int argc, char* argv[])
   const char *overlayFileNameL = NULL;
   const char *overlayFileNameBkg = NULL;
   const char *outputFileName = NULL;
-  const char *colorbarTitle = NULL;
+  const char *Title = NULL;
   double alpha = defaultAlpha;
   double overlayRange[2] = {defaultScalarRange[0], defaultScalarRange[1]};
   double overlayRangeBkg[2] = {defaultScalarRangeBkg[0], defaultScalarRangeBkg[1]};
@@ -330,7 +368,7 @@ int main(int argc, char* argv[])
      overlay = 1;
    }
    else if (strcmp(argv[j], "-title") == 0) {
-     j++; colorbarTitle = argv[j];
+     j++; Title = argv[j];
      title = 1;
    }
    else if (strcmp(argv[j], "-bkg") == 0) {
@@ -496,9 +534,12 @@ int main(int argc, char* argv[])
   vtkNew<vtkRenderWindow> renderWindow;
   renderWindow->AddRenderer(renderer);
   renderWindow->SetSize(WindowSize[0], WindowSize[1]);
+  renderWindow->SetAlphaBitPlanes(1);  // Enable usage of alpha channel
 
   if (bkgWhite) renderer->SetBackground(white);
   else renderer->SetBackground(black);
+
+  renderer->SetBackgroundAlpha(0.0); // Set transparency
 
   // Add the actors to the scene
   for (auto i = 0; i < actor.size(); ++i)
@@ -591,6 +632,25 @@ int main(int argc, char* argv[])
     }
   }
   
+  // Obtain the Title for colorbar, window and saved image
+  fs::path baseNameL;
+  
+  if (overlay) {
+    fs::path filePath(overlayFileNameL);
+    baseNameL = filePath.filename();
+  } else {
+    fs::path filePath(argv[indx]);
+    baseNameL = filePath.filename();
+  }
+
+  string strTmp = baseNameL.c_str();
+  vtksys::SystemTools::ReplaceString(strTmp,string(".gii"),string(""));
+  vtksys::SystemTools::ReplaceString(strTmp,string(".txt"),string(""));
+
+  // Set the title
+  if (title == 0) Title = strTmp.c_str();
+
+
   // build colormap
   for (auto i = 0; i < nMeshes; i++) {
     switch(colormap) {
@@ -669,6 +729,8 @@ int main(int argc, char* argv[])
 
   vtkSmartPointer<CustomInteractorStyle> customStyle = vtkSmartPointer<CustomInteractorStyle>::New();
   renderWindowInteractor->SetInteractorStyle(customStyle);
+
+  customStyle->SetCurrentRenderer(renderer);
   
   // Create the scalarBar.
   if (colorbar && overlay) {
@@ -698,20 +760,10 @@ int main(int argc, char* argv[])
     scalarBar->GetTitleTextProperty()->SetLineOffset(-10); // Apply additional specific settings after copying
     scalarBar->GetTitleTextProperty()->BoldOn(); 
 
-    fs::path filePath(overlayFileNameL);
-
-    // Obtain the folder name (directory path)
-    fs::path folderName = filePath.parent_path();
-
-    // Obtain the basename (filename with extension)
-    fs::path baseNameL = filePath.filename();
-    
-    // Set the title
-    if (title == 0) colorbarTitle = baseNameL.c_str();
     char info[150];
     snprintf(info, sizeof(info), "Mean=%.3f Median=%.3f SD=%.3f", get_mean(scalarLR), get_median(scalarLR), get_std(scalarLR));
     if (printStats) scalarBar->SetTitle(info);
-    else scalarBar->SetTitle(colorbarTitle);
+    else scalarBar->SetTitle(Title);
     
     renderer->AddActor2D(scalarBar);
   }
@@ -721,25 +773,22 @@ int main(int argc, char* argv[])
   renderer->GetActiveCamera()->Zoom(2.0); // Adjust the zoom factor as needed
 
   // Render an image (lights and cameras are created automatically)
-  renderWindow->Render();
-  
-  if ((overlay == 0) && (title == 0))
-    renderWindow->SetWindowName(argv[indx]);
-  else renderWindow->SetWindowName(colorbarTitle);
+  renderWindow->Render();  
+  renderWindow->SetWindowName(Title);
   
 
   // Save png-file if defined
   if (saveImage) {
+    
     string imageFilename;
     string ext = vtksys::SystemTools::GetFilenameLastExtension(outputFileName);
     
     if (strncmp(ext.c_str(), ".", 1)) {
 
-      string filename = vtksys::SystemTools::GetFilenameWithoutExtension(renderWindow->GetWindowName());
       string extension = ".png";
   
       // Adding extension using simple concatenation
-      imageFilename = filename + extension;    
+      imageFilename = Title + extension;    
 
     } else imageFilename = outputFileName;
     
@@ -751,6 +800,7 @@ int main(int argc, char* argv[])
     windowToImageFilter->SetInput(renderWindow);
     windowToImageFilter->SetScale(1); // Adjust the scale of the output image if needed
     windowToImageFilter->ReadFrontBufferOff(); // Read from the back buffer
+    windowToImageFilter->SetInputBufferTypeToRGBA(); // Also capture the alpha (transparency) channel
     windowToImageFilter->Update();
     
     // Create a PNG writer
@@ -758,7 +808,7 @@ int main(int argc, char* argv[])
     writer->SetFileName(imageFilename.c_str());
     writer->SetInputConnection(windowToImageFilter->GetOutputPort());
     writer->Write();
-  } else renderWindowInteractor->Start(); // Begin mouse interaction otherwise
+  } else renderWindowInteractor->Start(); // Begin interaction otherwise
 
 
   return EXIT_SUCCESS;
@@ -806,7 +856,6 @@ vtkSmartPointer<vtkDoubleArray> readScalars(const char* filename)
     // freesurfer scalars
     if (magic==16777215)
     {
-    
       nValues = FreadInt(fp);
       fNum = FreadInt(fp);
       valsPerVertex = FreadInt(fp);
