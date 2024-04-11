@@ -22,6 +22,7 @@
 #include "vtkCamera.h"
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 namespace fs = std::__fs::filesystem;
@@ -61,6 +62,12 @@ public:
   {
     vtkRenderWindowInteractor* rwi = this->Interactor;
     string key = rwi->GetKeySym();
+    string filename = vtksys::SystemTools::GetFilenameWithoutExtension(rwi->GetRenderWindow()->GetWindowName());
+
+    string extension = ".png";
+
+    // Adding extension using simple concatenation
+    string fullFilename = filename + extension;    
     
     // Handle custom keys; for example, if the 'g' key is pressed
     if (key == "g")
@@ -68,17 +75,43 @@ public:
       // Custom action for 'g' key
       vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
       windowToImageFilter->SetInput( rwi->GetRenderWindow() );
-      vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();
-      writer->SetFileName("render.png");
+      vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();      
+      writer->SetFileName(fullFilename.c_str());
       writer->SetInputConnection(windowToImageFilter->GetOutputPort());
       writer->Write();
-      cout << "Save render.png" << endl;
+      cout << "Save " << fullFilename << endl;
+    } else if ((key == "l") || (key == "L"))
+    {
+      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+      if (this->Interactor->GetShiftKey()) camera->Azimuth(1.0);
+      else camera->Azimuth(45.0);
+      camera->OrthogonalizeViewUp();
+      rwi->Render();
+    } else if ((key == "u") || (key == "U"))
+    {
+      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+      if (this->Interactor->GetShiftKey()) camera->Elevation(1.0);
+      else camera->Elevation(45.0);
+      camera->OrthogonalizeViewUp();
+      rwi->Render();
+    } else if ((key == "d") || (key == "D"))
+    {
+      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+      if (this->Interactor->GetShiftKey()) camera->Elevation(-1.0);
+      else camera->Elevation(-45.0);
+      camera->OrthogonalizeViewUp();
+      rwi->Render();
+    } else if (key == "o")
+    {
+      vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
+      this->CurrentRenderer->ResetCamera();
+      camera->Zoom(2.0); // Adjust the zoom factor as needed
+      rwi->Render();
     } else if (key == "h")
     {
       // Custom action for 'h' key
       usage("CAT_ViewSurf");
-    }
-    else
+    } else
     {
       // Call the parent class's OnKeyPress method to handle other keys
       vtkInteractorStyleTrackballCamera::OnKeyPress();
@@ -102,28 +135,40 @@ usage(const char* const prog)
   << endl
   << "OPTIONS" << endl
   << " Overlay:" << endl
-  << "  -scalar scalarInputLeft  " << endl
+  << "  -scalar scalarInput  " << endl
   << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
+  << endl
   << "  -overlay scalarInput  " << endl
   << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
+  << endl
   << "  -range lower upper  " << endl
   << "     Range of scalar values." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
+  << endl
   << "  -clip lower upper  " << endl
   << "     Clip scalar values. These values will be not displayed." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
+  << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl
+  << endl
   << "  -inverse  " << endl
   << "     Invert input values." << endl
+  << endl
+  << "  -stats  " << endl
+  << "     Output mean/median/SD in colorbar." << endl
+  << endl
   << " Colors:" << endl
   << "  -opacity value  " << endl
   << "     Value for opacity of overlay." << endl
   << "     Default value: " << defaultAlpha << endl
+  << endl
   << "  -white  " << endl
   << "     Use white background" << endl
+  << endl
   << "  -gray  " << endl
   << "     Use gray colorbar (default jet)." << endl
   << "  -redyellow  " << endl
@@ -138,28 +183,96 @@ usage(const char* const prog)
   << "     Use blue-green colorbar (default jet)." << endl
   << "  -greenblue  " << endl
   << "     Use green-blue colorbar (default jet)." << endl
+  << endl
   << " Output:" << endl
   << "  -size xsize ysize  " << endl
   << "     Window size." << endl
   << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
+  << endl
   << "  -output output.png  " << endl
-  << "     Save as png-file." << endl
+  << "     Save as png-file or use NULL to save image with the overlay or mesh name as png." << endl
   << endl
   << "KEYBOARD INTERACTIONS" << endl
-  << "  w " << endl
-  << "     Show wireframe." << endl
-  << "  s " << endl
-  << "     Show shaded." << endl
-  << "  q e" << endl
-  << "     Quit." << endl
+  << "  w   Show wireframe." << endl
+  << endl
+  << "  s   Show shaded." << endl
+  << endl
+  << "  3   Stereo view." << endl
+  << endl
+  << "  g   Save image as render.png." << endl
+  << endl
+  << "  f   Zoom to selected point." << endl
+  << endl
+  << "  q e Quit." << endl
   << endl
   << "REQUIRED PARAMETERS" << endl
-  << "    <input.vtk> " << endl
+  << "    <input.gii> " << endl
   << "" << endl
   << "EXAMPLE" << endl
-  << "    " << prog << " -range -1 1 -scalar scalarInput.txt input.vtk" << endl
+  << "    " << prog << " -range -1 1 -overlay overlayInput.txt lh.central.freesurfer.gii" << endl
   << endl
   << endl;
+}
+
+void quicksort(vtkSmartPointer<vtkDoubleArray> arr, int start, int end) {
+  if (end > start + 1) {
+    double pivot = arr->GetValue(start);
+    int left = start + 1, right = end;
+    while (left < right) {
+      if (arr->GetValue(left) <= pivot) {
+        left++;
+      } else {
+        double temp = arr->GetValue(left);
+        arr->SetValue(left, arr->GetValue(--right));
+        arr->SetValue(right, temp);
+      }
+    }
+    double temp = arr->GetValue(--left);
+    arr->SetValue(left, arr->GetValue(start));
+    arr->SetValue(start, temp);
+    quicksort(arr, start, left);
+    quicksort(arr, right, end);
+  }
+}
+
+double get_median(vtkSmartPointer<vtkDoubleArray> arr) {
+  int n = arr->GetNumberOfTuples();
+  quicksort(arr, 0, n);
+
+  if (n % 2 != 0)
+    return arr->GetValue(n / 2);
+  else
+    return (arr->GetValue((n - 1) / 2) + arr->GetValue(n / 2)) / 2.0;
+}
+
+double get_sum(vtkSmartPointer<vtkDoubleArray> arr) {
+  double sum = 0.0;
+  for(vtkIdType i = 0; i < arr->GetNumberOfTuples(); ++i) {
+    double value = arr->GetValue(i);
+    if (!std::isnan(value)) // Check if the value is not NaN
+        sum += value;
+  }
+  return sum;
+}
+
+double get_mean(vtkSmartPointer<vtkDoubleArray> arr) {
+  int n = arr->GetNumberOfTuples();
+  return get_sum(arr) / static_cast<double>(n);
+}
+
+double get_std(vtkSmartPointer<vtkDoubleArray> arr) {
+  int n = arr->GetNumberOfTuples();
+  double mean = get_mean(arr);
+  double variance = 0.0;
+  
+  for(vtkIdType i = 0; i < arr->GetNumberOfTuples(); ++i) {
+    double value = arr->GetValue(i);
+    if (!std::isnan(value)) // Check if the value is not NaN
+      variance += (value - mean) * (value - mean);
+  }
+  variance /= static_cast<double>(n);
+
+  return std::sqrt(variance);
 }
 
 int main(int argc, char* argv[])
@@ -184,8 +297,9 @@ int main(int argc, char* argv[])
   int colormap = JET;
   int colorbar = defaultColorbar;
   int inverse = defaultInverse;
-  int bkg = defaultBkg;
-  int overlay = 0, overlayBkg = 0, png = 0, title = 0;
+  int bkgWhite = defaultBkg;
+  int printStats = 0;
+  int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
   bool rhExists, bothHemis;
@@ -225,17 +339,19 @@ int main(int argc, char* argv[])
    }
    else if (strcmp(argv[j], "-output") == 0) {
      j++; outputFileName = argv[j];
-     png = 1;
+     saveImage = 1;
    }
    else if (strcmp(argv[j], "-opacity") == 0) {
      j++; alpha = atof(argv[j]);
    }
+   else if (strcmp(argv[j], "-stats") == 0)
+     printStats = 1;
    else if (strcmp(argv[j], "-inverse") == 0)
      inverse = 1;
    else if (strcmp(argv[j], "-colorbar") == 0) 
      colorbar = 1;
    else if (strcmp(argv[j], "-white") == 0) 
-    bkg = 1;
+    bkgWhite = 1;
    else if (strcmp(argv[j], "-gray") == 0) 
     colormap = GRAY;
    else if (strcmp(argv[j], "-redyellow") == 0) 
@@ -274,7 +390,7 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkCurvatures> curvature[2];
   curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
   curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
-
+  
   // check whether filename contains "lh." or "left" and replace filename with
   // name for the right hemisphere and check whether the file exists  
   string rhSurfName = argv[indx];
@@ -303,7 +419,9 @@ int main(int argc, char* argv[])
     }
     nMeshes = 2;
   } else nMeshes = 1;
-    
+  
+  fs::path currentPath = fs::current_path();
+
   array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
   vtkSmartPointer<vtkPolyDataMapper> mapper[2];
   vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
@@ -379,7 +497,7 @@ int main(int argc, char* argv[])
   renderWindow->AddRenderer(renderer);
   renderWindow->SetSize(WindowSize[0], WindowSize[1]);
 
-  if (bkg) renderer->SetBackground(white);
+  if (bkgWhite) renderer->SetBackground(white);
   else renderer->SetBackground(black);
 
   // Add the actors to the scene
@@ -388,6 +506,8 @@ int main(int argc, char* argv[])
     renderer->AddActor(actorBkg[i]);
     if (overlay) renderer->AddActor(actor[i]);
   }
+
+  vtkSmartPointer<vtkDoubleArray> scalars[2];
 
   // read scalars if defined
   if (overlay) {
@@ -402,7 +522,6 @@ int main(int argc, char* argv[])
     
     cout << "Read overlays: " << overlayFileNameL << endl;
     
-    vtkSmartPointer<vtkDoubleArray> scalars[2];
     for (auto i = 0; i < nMeshes; i++)
       scalars[i] = vtkSmartPointer<vtkDoubleArray>::New();
 
@@ -429,13 +548,17 @@ int main(int argc, char* argv[])
         // overlay
         try {
           scalars[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
-          for(int i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+          for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
             scalars[1]->SetValue(i,scalars[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
         } catch (const exception& e) {
           cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameL << endl;
           return(-1);
         }
       }
+      
+      // go back to current folder
+      fs::current_path(currentPath);
+
     }
     
     if(inverse) {
@@ -548,9 +671,21 @@ int main(int argc, char* argv[])
   renderWindowInteractor->SetInteractorStyle(customStyle);
   
   // Create the scalarBar.
-  if (colorbar == 1) {
+  if (colorbar && overlay) {
+    
+    vtkSmartPointer<vtkDoubleArray> scalarLR = vtkSmartPointer<vtkDoubleArray>::New();
+    int nValuesLR = polyData[0]->GetNumberOfPoints() + polyData[1]->GetNumberOfPoints();
+    scalarLR->SetNumberOfTuples(nValuesLR);
+
+    for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+      scalarLR->SetValue(i,scalars[0]->GetValue(i));
+    for (auto i=0; i < polyData[1]->GetNumberOfPoints(); i++)
+      scalarLR->SetValue(i+polyData[0]->GetNumberOfPoints(),scalars[1]->GetValue(i));
 
     vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
+    if (bkgWhite) textProperty->SetColor(black);
+    else textProperty->SetColor(white);
+
     vtkNew<vtkScalarBarActor> scalarBar;
     scalarBar->SetOrientationToHorizontal();
     scalarBar->SetLookupTable(lookupTable[0]);
@@ -558,9 +693,10 @@ int main(int argc, char* argv[])
     scalarBar->SetHeight(0.05);
     scalarBar->SetPosition(0.35, 0.05);
     
-    if (bkg) textProperty->SetColor(black);
-    else textProperty->SetColor(white);
     scalarBar->GetLabelTextProperty()->ShallowCopy(textProperty);
+    scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
+    scalarBar->GetTitleTextProperty()->SetLineOffset(-10); // Apply additional specific settings after copying
+    scalarBar->GetTitleTextProperty()->BoldOn(); 
 
     fs::path filePath(overlayFileNameL);
 
@@ -570,9 +706,12 @@ int main(int argc, char* argv[])
     // Obtain the basename (filename with extension)
     fs::path baseNameL = filePath.filename();
     
-    if (title == 0) scalarBar->SetTitle(baseNameL.c_str());
+    // Set the title
+    if (title == 0) colorbarTitle = baseNameL.c_str();
+    char info[150];
+    snprintf(info, sizeof(info), "Mean=%.3f Median=%.3f SD=%.3f", get_mean(scalarLR), get_median(scalarLR), get_std(scalarLR));
+    if (printStats) scalarBar->SetTitle(info);
     else scalarBar->SetTitle(colorbarTitle);
-    scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
     
     renderer->AddActor2D(scalarBar);
   }
@@ -583,13 +722,29 @@ int main(int argc, char* argv[])
 
   // Render an image (lights and cameras are created automatically)
   renderWindow->Render();
-
-  renderWindow->SetWindowName("CAT_View");
+  
+  if ((overlay == 0) && (title == 0))
+    renderWindow->SetWindowName(argv[indx]);
+  else renderWindow->SetWindowName(colorbarTitle);
+  
 
   // Save png-file if defined
-  if (png) {
+  if (saveImage) {
+    string imageFilename;
+    string ext = vtksys::SystemTools::GetFilenameLastExtension(outputFileName);
+    
+    if (strncmp(ext.c_str(), ".", 1)) {
 
-    cout << "Write: " << outputFileName << endl; 
+      string filename = vtksys::SystemTools::GetFilenameWithoutExtension(renderWindow->GetWindowName());
+      string extension = ".png";
+  
+      // Adding extension using simple concatenation
+      imageFilename = filename + extension;    
+
+    } else imageFilename = outputFileName;
+    
+    // we have to rescue fullpath, since we changed folder
+    cout << "Write: " << imageFilename << endl; 
 
     // Create a window to image filter
     vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
@@ -600,7 +755,7 @@ int main(int argc, char* argv[])
     
     // Create a PNG writer
     vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();
-    writer->SetFileName(outputFileName);
+    writer->SetFileName(imageFilename.c_str());
     writer->SetInputConnection(windowToImageFilter->GetOutputPort());
     writer->Write();
   } else renderWindowInteractor->Start(); // Begin mouse interaction otherwise
