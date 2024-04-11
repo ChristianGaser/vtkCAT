@@ -4,4 +4,4 @@ examples
 Makefile
 *.a
 cmake_install.cmake
-CAT_View.app 
+CAT_ViewSurf 
