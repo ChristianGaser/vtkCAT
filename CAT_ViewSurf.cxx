@@ -32,7 +32,7 @@ namespace fs = std::__fs::filesystem;
 using namespace std;
 
 typedef enum ColorMap {
-    RB, JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
+    C1, C2, C3, JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
 } ColorMap;
 
 static void usage(const char* const prog);
@@ -54,14 +54,52 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
   vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
 
   switch(colormap) {
-  case RB:
+  case C1:
 
     // Add RGB points to the function
-    colorTransferFunction->AddRGBPoint(0.0, 0.6, 0.6, 1); 
+    colorTransferFunction->AddRGBPoint(100.0,213/255.0,62/255.0,79/255.0); 
+    colorTransferFunction->AddRGBPoint(87.5, 244/255.0,109/255.0,67/255.0); 
+    colorTransferFunction->AddRGBPoint(75.0, 253/255.0,174/255.0,97/255.0); 
+    colorTransferFunction->AddRGBPoint(62.5, 254/255.0,224/255.0,139/255.0);
+    colorTransferFunction->AddRGBPoint(50.0, 255/255.0,255/255.0,191/255.0);
+    colorTransferFunction->AddRGBPoint(37.5, 230/255.0,245/255.0,152/255.0);
+    colorTransferFunction->AddRGBPoint(25.0, 171/255.0,221/255.0,164/255.0);
+    colorTransferFunction->AddRGBPoint(12.5, 102/255.0,194/255.0,165/255.0);
+    colorTransferFunction->AddRGBPoint(0.0,  50/255.0,136/255.0,189/255.0);
+
+    // Fill the lookup table using the color transfer function
+    for (int i = 0; i < 256; i++) {
+        double* rgb;
+        double value = (static_cast<double>(i) / 255.0) * 100.0;
+        rgb = colorTransferFunction->GetColor(value);
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+    }
+    break;
+  case C2:
+
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0, 0, 0.6, 1); 
     colorTransferFunction->AddRGBPoint(25.0, 0.5, 1, 0.5); 
     colorTransferFunction->AddRGBPoint(50.0, 1, 1, 0.5); 
     colorTransferFunction->AddRGBPoint(75.0, 1, 0.75, 0.5); 
     colorTransferFunction->AddRGBPoint(100.0, 1, 0.5, 0.5);
+
+    // Fill the lookup table using the color transfer function
+    for (int i = 0; i < 256; i++) {
+        double* rgb;
+        double value = (static_cast<double>(i) / 255.0) * 100.0;
+        rgb = colorTransferFunction->GetColor(value);
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+    }
+    break;
+  case C3:
+
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0,  0/255.0,143/255.0,213/255.0); 
+    colorTransferFunction->AddRGBPoint(25.0, 111/255.0,190/255.0,70/255.0); 
+    colorTransferFunction->AddRGBPoint(50.0, 255/255.0,220/255.0,45/255.0); 
+    colorTransferFunction->AddRGBPoint(75.0, 252/255.0,171/255.0,23/255.0); 
+    colorTransferFunction->AddRGBPoint(100.0,238/255.0,28/255.0,58/255.0);
 
     // Fill the lookup table using the color transfer function
     for (int i = 0; i < 256; i++) {
@@ -129,7 +167,7 @@ usage(const char* const prog)
   << endl
   << "OPTIONS" << endl
   << " Overlay:" << endl
-  << "  -scalar scalarInput  " << endl
+  << "  -scalar scalarInput (deprecated) " << endl
   << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
   << "  -overlay scalarInput  " << endl
@@ -142,6 +180,9 @@ usage(const char* const prog)
   << "  -clip lower upper  " << endl
   << "     Clip scalar values. These values will be not displayed." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << endl
+  << "  -bkg scalarInputBkg  " << endl
+  << "     File with scalar values for background surface (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
@@ -163,8 +204,12 @@ usage(const char* const prog)
   << "  -white  " << endl
   << "     Use white background" << endl
   << endl
-  << "  -rainbow  " << endl
-  << "     Use brighter rainbow colorbar (default jet)." << endl
+  << "  -c1  " << endl
+  << "     Use custom rainbow colorbar 1 (default jet)." << endl
+  << "  -c2  " << endl
+  << "     Use custom rainbow colorbar 2 (default jet)." << endl
+  << "  -c3  " << endl
+  << "     Use custom rainbow colorbar 3 (default jet)." << endl
   << "  -gray  " << endl
   << "     Use gray colorbar (default jet)." << endl
   << "  -redyellow  " << endl
@@ -229,7 +274,7 @@ int main(int argc, char* argv[])
   }
 
   const char *overlayFileNameL = NULL;
-  const char *overlayFileNameBkg = NULL;
+  const char *overlayFileNameBkgL = NULL;
   const char *outputFileName = NULL;
   const char *Title = NULL;
   double alpha = defaultAlpha;
@@ -247,7 +292,7 @@ int main(int argc, char* argv[])
   int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
-  bool rhExists, bothHemis;
+  bool rhExists, rhExistsBkg, bothHemis;
 
   for (int j = 1; j < argc; j++) {
     if (argv[j][0] != '-') {
@@ -279,7 +324,7 @@ int main(int argc, char* argv[])
      title = 1;
    }
    else if (strcmp(argv[j], "-bkg") == 0) {
-     j++; overlayFileNameBkg = argv[j];
+     j++; overlayFileNameBkgL = argv[j];
      overlayBkg = 1;
    }
    else if (strcmp(argv[j], "-output") == 0) {
@@ -297,8 +342,12 @@ int main(int argc, char* argv[])
      colorbar = 1;
    else if (strcmp(argv[j], "-white") == 0) 
     bkgWhite = 1;
-   else if (strcmp(argv[j], "-rainbow") == 0) 
-    colormap = RB;
+   else if (strcmp(argv[j], "-c1") == 0) 
+    colormap = C1;
+   else if (strcmp(argv[j], "-c2") == 0) 
+    colormap = C2;
+   else if (strcmp(argv[j], "-c3") == 0) 
+    colormap = C3;
    else if (strcmp(argv[j], "-gray") == 0) 
     colormap = GRAY;
    else if (strcmp(argv[j], "-redyellow") == 0) 
@@ -334,9 +383,22 @@ int main(int argc, char* argv[])
   lookupTable[1] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableBkg = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
 
+  vtkSmartPointer<vtkDoubleArray> scalarsBkg[2];
+  scalarsBkg[0] = vtkSmartPointer<vtkDoubleArray>::New();
+  scalarsBkg[1] = vtkSmartPointer<vtkDoubleArray>::New();
+
+  vtkSmartPointer<vtkDoubleArray> scalars[2];
+  scalars[0] = vtkSmartPointer<vtkDoubleArray>::New();
+  scalars[1] = vtkSmartPointer<vtkDoubleArray>::New();
+
   vtkSmartPointer<vtkCurvatures> curvature[2];
   curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
   curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
+
+  array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
+//  vtkSmartPointer<vtkPolyData> curvaturesMesh[2];
+  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
+  vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
   
   // check whether filename contains "lh." or "left" and replace filename with
   // name for the right hemisphere and check whether the file exists  
@@ -369,16 +431,58 @@ int main(int argc, char* argv[])
   
   fs::path currentPath = fs::current_path();
 
-  array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
-  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
-  vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
+  // read background scalars if defined
+  if (overlayBkg) {
+    
+    cout << "Read underlays: " << overlayFileNameBkgL << endl;
+    
+    scalarsBkg[0] = readScalars(overlayFileNameBkgL);
+    
+    // if defined, read right hemispheric overlay
+    if ((nMeshes > 1) && rhExists) {
+
+      // try replacing lh/left by rh/right in the overlay filename
+      string overlayFileNameR = overlayFileNameBkgL;
+      if (overlayFileNameR.find("lh.") != string::npos) {
+        vtksys::SystemTools::ReplaceString(overlayFileNameR,string("lh."),string("rh."));
+        rhExistsBkg = vtksys::SystemTools::FileExists(overlayFileNameR);
+      } else if (rhSurfName.find("left") != string::npos) {
+        string overlayFileNameR = overlayFileNameBkgL;
+        vtksys::SystemTools::ReplaceString(overlayFileNameR,string("left"),string("right"));
+        rhExistsBkg = vtksys::SystemTools::FileExists(overlayFileNameR);
+      } else rhExistsBkg = false;
+
+      if (rhExistsBkg)
+        scalarsBkg[1] = readScalars(overlayFileNameR.c_str());
+      else {
+        // or split the single overlay (which is merged) into left and right
+        // overlay
+        try {
+          scalarsBkg[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
+          for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
+            scalarsBkg[1]->SetValue(i,scalarsBkg[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
+        } catch (const exception& e) {
+          cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameBkgL << endl;
+          return(-1);
+        }
+      }
+    }
+    
+    if (scalarsBkg[0] == NULL) {
+      cerr << "Error reading file " << overlayFileNameBkgL << endl;
+      return(-1);
+    }
+  }
 
   for (auto i = 0; i < nMeshes; i++) {
+  
     curvature[i]->SetInputData(polyData[i]);
     curvature[i]->SetCurvatureTypeToMean();
     curvature[i]->Update();
-  
-    curvaturesMesh[i] = curvature[i]->GetOutput();  
+    curvaturesMesh[i] = curvature[i]->GetOutput();
+
+    if (overlayBkg)
+      curvaturesMesh[i]->GetPointData()->SetScalars(scalarsBkg[i]);  
 
     // Create mapper
     mapper[i] = vtkSmartPointer<vtkPolyDataMapper>::New();
@@ -457,8 +561,6 @@ int main(int argc, char* argv[])
     if (overlay) renderer->AddActor(actor[i]);
   }
 
-  vtkSmartPointer<vtkDoubleArray> scalars[2];
-
   // read scalars if defined
   if (overlay) {
 
@@ -472,8 +574,8 @@ int main(int argc, char* argv[])
     
     cout << "Read overlays: " << overlayFileNameL << endl;
     
-    for (auto i = 0; i < nMeshes; i++)
-      scalars[i] = vtkSmartPointer<vtkDoubleArray>::New();
+//    for (auto i = 0; i < nMeshes; i++)
+//      scalars[i] = vtkSmartPointer<vtkDoubleArray>::New();
 
     scalars[0] = readScalars(baseNameL.c_str());
     
@@ -580,7 +682,7 @@ int main(int argc, char* argv[])
   lookupTableBkg->SetSaturationRange( 0.0, 0.0 );
   lookupTableBkg->SetValueRange( 0.0, 1.0 );
 
-  lookupTableBkg->SetTableRange( -0.5, 0.5 );
+  lookupTableBkg->SetTableRange( -1, 1 );
   lookupTableBkg->Build();
   
   for (auto i = 0; i < nMeshes; i++) {
@@ -589,7 +691,7 @@ int main(int argc, char* argv[])
       mapper[i]->SetLookupTable( lookupTable[i] );
     }
     
-    mapperBkg[i]->SetScalarRange( -0.5, 0.5 );
+    mapperBkg[i]->SetScalarRange( -1, 1 );
     mapperBkg[i]->SetLookupTable( lookupTableBkg );
   }
   
