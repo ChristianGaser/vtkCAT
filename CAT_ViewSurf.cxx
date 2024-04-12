@@ -17,6 +17,7 @@
 #include <vtkPNGWriter.h>
 #include <vtkInteractorStyle.h>
 #include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkColorTransferFunction.h>
 #include <vtksys/SystemTools.hxx>
 #include "vtkSurfaceReader.h"
 #include "vtkCustomInteractorStyle.h"
@@ -31,7 +32,7 @@ namespace fs = std::__fs::filesystem;
 using namespace std;
 
 typedef enum ColorMap {
-    JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
+    RB, JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
 } ColorMap;
 
 static void usage(const char* const prog);
@@ -46,6 +47,73 @@ static int defaultInverse = 0;
 static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1750, 1000 };
 
+// Obtain LookUpTable for defined colormap
+vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
+{
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
+
+  switch(colormap) {
+  case RB:
+
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0, 0.6, 0.6, 1); 
+    colorTransferFunction->AddRGBPoint(25.0, 0.5, 1, 0.5); 
+    colorTransferFunction->AddRGBPoint(50.0, 1, 1, 0.5); 
+    colorTransferFunction->AddRGBPoint(75.0, 1, 0.75, 0.5); 
+    colorTransferFunction->AddRGBPoint(100.0, 1, 0.5, 0.5);
+
+    // Fill the lookup table using the color transfer function
+    for (int i = 0; i < 256; i++) {
+        double* rgb;
+        double value = 0.0 + (static_cast<double>(i) / 255.0) * (100.0 - 0.0);
+        rgb = colorTransferFunction->GetColor(value);
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+    }
+    break;
+  case JET:
+    lookupTable->SetHueRange( 0.667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case GRAY:
+    lookupTable->SetHueRange( 0.0, 0.0 );
+    lookupTable->SetSaturationRange( 0.0, 0.0 );
+    lookupTable->SetValueRange( 0.0, 1.0 );
+    break;
+  case REDYELLOW:
+    lookupTable->SetHueRange( 0.0, 0.1667 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case BLUECYAN:
+    lookupTable->SetHueRange( 0.66667, 0.5);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case YELLOWRED:
+    lookupTable->SetHueRange( 0.1667, 0.0 );
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case CYANBLUE:
+    lookupTable->SetHueRange( 0.5, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case BLUEGREEN:
+    lookupTable->SetHueRange( 0.66667, 0.33333);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  case GREENBLUE:
+    lookupTable->SetHueRange( 0.33333, 0.66667);
+    lookupTable->SetSaturationRange( 1.0, 1.0 );
+    lookupTable->SetValueRange( 1.0, 1.0 );
+    break;
+  }
+  return lookupTable;
+}
 static void
 usage(const char* const prog)
 {
@@ -95,6 +163,8 @@ usage(const char* const prog)
   << "  -white  " << endl
   << "     Use white background" << endl
   << endl
+  << "  -rainbow  " << endl
+  << "     Use brighter rainbow colorbar (default jet)." << endl
   << "  -gray  " << endl
   << "     Use gray colorbar (default jet)." << endl
   << "  -redyellow  " << endl
@@ -227,6 +297,8 @@ int main(int argc, char* argv[])
      colorbar = 1;
    else if (strcmp(argv[j], "-white") == 0) 
     bkgWhite = 1;
+   else if (strcmp(argv[j], "-rainbow") == 0) 
+    colormap = RB;
    else if (strcmp(argv[j], "-gray") == 0) 
     colormap = GRAY;
    else if (strcmp(argv[j], "-redyellow") == 0) 
@@ -490,48 +562,9 @@ int main(int argc, char* argv[])
 
   // build colormap
   for (auto i = 0; i < nMeshes; i++) {
-    switch(colormap) {
-    case JET:
-      lookupTable[i]->SetHueRange( 0.667, 0.0 );
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case GRAY:
-      lookupTable[i]->SetHueRange( 0.0, 0.0 );
-      lookupTable[i]->SetSaturationRange( 0.0, 0.0 );
-      lookupTable[i]->SetValueRange( 0.0, 1.0 );
-      break;
-    case REDYELLOW:
-      lookupTable[i]->SetHueRange( 0.0, 0.1667 );
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case BLUECYAN:
-      lookupTable[i]->SetHueRange( 0.66667, 0.5);
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case YELLOWRED:
-      lookupTable[i]->SetHueRange( 0.1667, 0.0 );
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case CYANBLUE:
-      lookupTable[i]->SetHueRange( 0.5, 0.66667);
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case BLUEGREEN:
-      lookupTable[i]->SetHueRange( 0.66667, 0.33333);
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    case GREENBLUE:
-      lookupTable[i]->SetHueRange( 0.33333, 0.66667);
-      lookupTable[i]->SetSaturationRange( 1.0, 1.0 );
-      lookupTable[i]->SetValueRange( 1.0, 1.0 );
-      break;
-    }
+
+    // get LUT for colormap
+    lookupTable[i] = getLookupTable(colormap);
 
     // set opacity  
     lookupTable[i]->SetAlphaRange( alpha, alpha );
