@@ -143,6 +143,7 @@ public:
   
         vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
         windowToImageFilter->SetInput( rwi->GetRenderWindow() );
+        windowToImageFilter->SetInputBufferTypeToRGBA(); // Also capture the alpha (transparency) channel
         windowToImageFilter->Update();  // Ensure the filter processes the current render window content
         vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();      
         writer->SetFileName(fullFilename.c_str());
