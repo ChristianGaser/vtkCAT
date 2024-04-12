@@ -45,7 +45,7 @@ static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultColorbar = 0;
 static int defaultInverse = 0;
 static int defaultBkg = 0;
-static int defaultWindowSize[2] = { 1750, 1000 };
+static int defaultWindowSize[2] = { 1800, 1000 };
 
 // Obtain LookUpTable for defined colormap
 vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
@@ -66,7 +66,7 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
     // Fill the lookup table using the color transfer function
     for (int i = 0; i < 256; i++) {
         double* rgb;
-        double value = 0.0 + (static_cast<double>(i) / 255.0) * (100.0 - 0.0);
+        double value = (static_cast<double>(i) / 255.0) * 100.0;
         rgb = colorTransferFunction->GetColor(value);
         lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
     }
