@@ -48,7 +48,7 @@ static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1800, 1000 };
 
 // Obtain LookUpTable for defined colormap
-vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
+vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha)
 {
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
@@ -72,7 +72,7 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
         double* rgb;
         double value = (static_cast<double>(i) / 255.0) * 100.0;
         rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
     }
     break;
   case C2:
@@ -89,7 +89,7 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
         double* rgb;
         double value = (static_cast<double>(i) / 255.0) * 100.0;
         rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
     }
     break;
   case C3:
@@ -106,7 +106,7 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap)
         double* rgb;
         double value = (static_cast<double>(i) / 255.0) * 100.0;
         rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], 1.0); // Set RGBA, with full opacity
+        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
     }
     break;
   case JET:
@@ -183,6 +183,10 @@ usage(const char* const prog)
   << endl
   << "  -bkg scalarInputBkg  " << endl
   << "     File with scalar values for background surface (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
+  << endl
+  << "  -range-bkg lower upper  " << endl
+  << "     Range of background scalar values." << endl
+  << "     Default value: " << defaultScalarRangeBkg[0] << " " << defaultScalarRangeBkg[1] << endl
   << endl
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
@@ -395,8 +399,7 @@ int main(int argc, char* argv[])
   curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
   curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
 
-  array<vtkSmartPointer<vtkPolyData>, 2> curvaturesMesh;
-//  vtkSmartPointer<vtkPolyData> curvaturesMesh[2];
+  vtkSmartPointer<vtkPolyData> curvaturesMesh[2];
   vtkSmartPointer<vtkPolyDataMapper> mapper[2];
   vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
   
@@ -492,6 +495,10 @@ int main(int argc, char* argv[])
 
     mapperBkg[i] = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapperBkg[i]->SetInputData(curvaturesMesh[i]);
+
+    if (overlayRangeBkg[1] < overlayRangeBkg[0])
+      curvaturesMesh[i]->GetScalarRange( overlayRangeBkg );
+
   }
 
   // Create actor
@@ -574,9 +581,6 @@ int main(int argc, char* argv[])
     
     cout << "Read overlays: " << overlayFileNameL << endl;
     
-//    for (auto i = 0; i < nMeshes; i++)
-//      scalars[i] = vtkSmartPointer<vtkDoubleArray>::New();
-
     scalars[0] = readScalars(baseNameL.c_str());
     
     // if defined, read right hemispheric overlay
@@ -610,7 +614,6 @@ int main(int argc, char* argv[])
       
       // go back to current folder
       fs::current_path(currentPath);
-
     }
     
     if(inverse) {
@@ -666,15 +669,15 @@ int main(int argc, char* argv[])
   for (auto i = 0; i < nMeshes; i++) {
 
     // get LUT for colormap
-    lookupTable[i] = getLookupTable(colormap);
+    lookupTable[i] = getLookupTable(colormap,alpha);
+  
+    lookupTable[i]->SetTableRange( overlayRange );
+    if (clipRange[1] > clipRange[0])
+      lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
 
     // set opacity  
     lookupTable[i]->SetAlphaRange( alpha, alpha );
-  
-    if (overlayRange[1] > overlayRange[0])
-      lookupTable[i]->SetTableRange( overlayRange );
-    if (clipRange[1] > clipRange[0])
-      lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
+
     lookupTable[i]->Build();
   }
   
@@ -682,7 +685,8 @@ int main(int argc, char* argv[])
   lookupTableBkg->SetSaturationRange( 0.0, 0.0 );
   lookupTableBkg->SetValueRange( 0.0, 1.0 );
 
-  lookupTableBkg->SetTableRange( -1, 1 );
+  if (overlayRangeBkg[1] > overlayRangeBkg[0])
+    lookupTableBkg->SetTableRange( overlayRangeBkg );
   lookupTableBkg->Build();
   
   for (auto i = 0; i < nMeshes; i++) {
@@ -691,7 +695,7 @@ int main(int argc, char* argv[])
       mapper[i]->SetLookupTable( lookupTable[i] );
     }
     
-    mapperBkg[i]->SetScalarRange( -1, 1 );
+    mapperBkg[i]->SetScalarRange( overlayRangeBkg );
     mapperBkg[i]->SetLookupTable( lookupTableBkg );
   }
   
