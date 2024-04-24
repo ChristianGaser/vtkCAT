@@ -46,8 +46,7 @@ void ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkP
     if (rhExistsBkg)
       scalarsBkg[1] = readScalars(overlayFileNameR.c_str());
     else {
-      // or split the single overlay (which is merged) into left and right
-      // overlay
+      // or split the single overlay (which is merged) into left and right overlay
       try {
         scalarsBkg[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
         for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
@@ -251,107 +250,111 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
 
 }
 
+// Fill the lookup table using the color transfer function
+void fillLookupTable(vtkLookupTableWithEnabling* lookupTable, vtkColorTransferFunction* colorTransferFunction, double alpha) {
+
+  for (int i = 0; i < 256; i++) {
+      double* rgb;
+      double value = (static_cast<double>(i) / 255.0) * 100.0;
+      rgb = colorTransferFunction->GetColor(value);
+      lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
+  }
+}
+
 // Obtain LookUpTable for defined colormap
-vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha)
+vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha, double overlayRange[], double clipRange[], int clipFullColors)
 {
+  double c1, c2;
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
 
+  if (clipFullColors) {
+    c1 = 100.0*(clipRange[0] - overlayRange[0])/(overlayRange[1] - overlayRange[0]);
+    c2 = 100.0*(clipRange[1] - overlayRange[0])/(overlayRange[1] - overlayRange[0]);
+  } else {
+    c1 = c2 = 50.0;
+  }
+  
   switch(colormap) {
   case C1:
-
     // Add RGB points to the function
-    colorTransferFunction->AddRGBPoint(100.0,213/255.0,62/255.0,79/255.0); 
-    colorTransferFunction->AddRGBPoint(87.5, 244/255.0,109/255.0,67/255.0); 
-    colorTransferFunction->AddRGBPoint(75.0, 253/255.0,174/255.0,97/255.0); 
-    colorTransferFunction->AddRGBPoint(62.5, 254/255.0,224/255.0,139/255.0);
-    colorTransferFunction->AddRGBPoint(50.0, 255/255.0,255/255.0,191/255.0);
-    colorTransferFunction->AddRGBPoint(37.5, 230/255.0,245/255.0,152/255.0);
-    colorTransferFunction->AddRGBPoint(25.0, 171/255.0,221/255.0,164/255.0);
-    colorTransferFunction->AddRGBPoint(12.5, 102/255.0,194/255.0,165/255.0);
     colorTransferFunction->AddRGBPoint(0.0,  50/255.0,136/255.0,189/255.0);
+    colorTransferFunction->AddRGBPoint(c1*1/4, 102/255.0,194/255.0,165/255.0);
+    colorTransferFunction->AddRGBPoint(c1*2/4, 171/255.0,221/255.0,164/255.0);
+    colorTransferFunction->AddRGBPoint(c1*3/4, 230/255.0,245/255.0,152/255.0);
+    colorTransferFunction->AddRGBPoint(c1, 255/255.0,255/255.0,191/255.0);
+    
+    colorTransferFunction->AddRGBPoint(c2, 255/255.0,255/255.0,191/255.0);
+    colorTransferFunction->AddRGBPoint(c2*5/4, 254/255.0,224/255.0,139/255.0);
+    colorTransferFunction->AddRGBPoint(c2*6/4, 253/255.0,174/255.0,97/255.0); 
+    colorTransferFunction->AddRGBPoint(c2*7/4, 244/255.0,109/255.0,67/255.0); 
+    colorTransferFunction->AddRGBPoint(100.0,213/255.0,62/255.0,79/255.0); 
 
-    // Fill the lookup table using the color transfer function
-    for (int i = 0; i < 256; i++) {
-        double* rgb;
-        double value = (static_cast<double>(i) / 255.0) * 100.0;
-        rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
-    }
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
     break;
   case C2:
-
     // Add RGB points to the function
-    colorTransferFunction->AddRGBPoint(0.0, 0, 0.6, 1); 
-    colorTransferFunction->AddRGBPoint(25.0, 0.5, 1, 0.5); 
-    colorTransferFunction->AddRGBPoint(50.0, 1, 1, 0.5); 
-    colorTransferFunction->AddRGBPoint(75.0, 1, 0.75, 0.5); 
-    colorTransferFunction->AddRGBPoint(100.0, 1, 0.5, 0.5);
+    colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.6, 1.0); 
+    colorTransferFunction->AddRGBPoint(c1*1/2, 0.5, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(c1, 1.0, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(c2, 1.0, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(c2*3/2, 1.0, 0.75, 0.5); 
+    colorTransferFunction->AddRGBPoint(100.0, 1.0, 0.5, 0.5);
 
-    // Fill the lookup table using the color transfer function
-    for (int i = 0; i < 256; i++) {
-        double* rgb;
-        double value = (static_cast<double>(i) / 255.0) * 100.0;
-        rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
-    }
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
     break;
   case C3:
-
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0,  0/255.0,143/255.0,213/255.0); 
-    colorTransferFunction->AddRGBPoint(25.0, 111/255.0,190/255.0,70/255.0); 
-    colorTransferFunction->AddRGBPoint(50.0, 255/255.0,220/255.0,45/255.0); 
-    colorTransferFunction->AddRGBPoint(75.0, 252/255.0,171/255.0,23/255.0); 
+    colorTransferFunction->AddRGBPoint(c1*1/2, 111/255.0,190/255.0,70/255.0); 
+    colorTransferFunction->AddRGBPoint(c1, 255/255.0,220/255.0,45/255.0); 
+    colorTransferFunction->AddRGBPoint(c2, 255/255.0,220/255.0,45/255.0); 
+    colorTransferFunction->AddRGBPoint(c2*3/2, 252/255.0,171/255.0,23/255.0); 
     colorTransferFunction->AddRGBPoint(100.0,238/255.0,28/255.0,58/255.0);
 
-    // Fill the lookup table using the color transfer function
-    for (int i = 0; i < 256; i++) {
-        double* rgb;
-        double value = (static_cast<double>(i) / 255.0) * 100.0;
-        rgb = colorTransferFunction->GetColor(value);
-        lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
-    }
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
     break;
   case JET:
-    lookupTable->SetHueRange( 0.667, 0.0 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.0, 0.5625); 
+    colorTransferFunction->AddRGBPoint(c1*1/3, 0.0, 0.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(c1*2/3, 0.0, 1.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(c1, 0.5, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(c2, 0.5, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(c2*4/3, 1.0, 1.0, 0.0);
+    colorTransferFunction->AddRGBPoint(c2*5/3, 1.0, 0.0, 0.0);
+    colorTransferFunction->AddRGBPoint(100.0, 0.5, 0.0, 0.0);
+
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
+    break;
+  case FIRE:
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c1*1/2, 0.5, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c1, 1.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c2, 1.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c2*3/2, 1.0, 0.5, 0.0); 
+    colorTransferFunction->AddRGBPoint(100.0, 1.0, 1.0, 0.0);
+
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
+    break;
+  case BIPOLAR:
+    // Add RGB points to the function
+    colorTransferFunction->AddRGBPoint(0.0, 0.0, 1.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(c1*1/2, 0.0, 0.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(c1, 0.1, 0.1, 0.1); 
+    colorTransferFunction->AddRGBPoint(c2, 0.1, 0.1, 0.1); 
+    colorTransferFunction->AddRGBPoint(c2*5/4, 0.5, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c2*6/4, 1.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(c2*7/4, 1.0, 0.5, 0.0); 
+    colorTransferFunction->AddRGBPoint(100.0, 1.0, 1.0, 0.0);
+
+    fillLookupTable(lookupTable,colorTransferFunction,alpha);
     break;
   case GRAY:
     lookupTable->SetHueRange( 0.0, 0.0 );
     lookupTable->SetSaturationRange( 0.0, 0.0 );
     lookupTable->SetValueRange( 0.0, 1.0 );
-    break;
-  case REDYELLOW:
-    lookupTable->SetHueRange( 0.0, 0.1667 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case BLUECYAN:
-    lookupTable->SetHueRange( 0.66667, 0.5);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case YELLOWRED:
-    lookupTable->SetHueRange( 0.1667, 0.0 );
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case CYANBLUE:
-    lookupTable->SetHueRange( 0.5, 0.66667);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case BLUEGREEN:
-    lookupTable->SetHueRange( 0.66667, 0.33333);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
-    break;
-  case GREENBLUE:
-    lookupTable->SetHueRange( 0.33333, 0.66667);
-    lookupTable->SetSaturationRange( 1.0, 1.0 );
-    lookupTable->SetValueRange( 1.0, 1.0 );
     break;
   }
   return lookupTable;
@@ -375,33 +378,45 @@ void usage(const char* const prog)
   << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
   << "  -overlay scalarInput  " << endl
+  << "  -ov scalarInput  " << endl
   << "     File with scalar values (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
   << "  -range lower upper  " << endl
+  << "  -r lower upper  " << endl
   << "     Range of scalar values." << endl
   << "     Default value: " << defaultScalarRange[0] << " " << defaultScalarRange[1] << endl
   << endl
   << "  -clip lower upper  " << endl
+  << "  -cl lower upper  " << endl
   << "     Clip scalar values. These values will be not displayed." << endl
+  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
+  << endl
+  << "  -clip2 lower upper  " << endl
+  << "  -cl2 lower upper  " << endl
+  << "     Clip scalar values. These values will be not displayed, but here the full range of the colors is shown and not clipped." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
   << endl
   << "  -bkg scalarInputBkg  " << endl
   << "     File with scalar values for background surface (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
   << "  -range-bkg lower upper  " << endl
+  << "  -rb lower upper  " << endl
   << "     Range of background scalar values." << endl
   << "     Default value: " << defaultScalarRangeBkg[0] << " " << defaultScalarRangeBkg[1] << endl
   << endl
   << "  -colorbar  " << endl
+  << "  -cb  " << endl
   << "     Show colorbar (default no)." << endl
   << endl
   << "  -colorbar2  " << endl
+  << "  -cb2  " << endl
   << "     Show discrete colorbar with gaps (default no)." << endl
   << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl
   << endl
   << "  -fontsize  " << endl
+  << "  -fs  " << endl
   << "     Set font size for colorbar." << endl
   << endl
   << "  -log  " << endl
@@ -415,39 +430,32 @@ void usage(const char* const prog)
   << endl
   << " Colors:" << endl
   << "  -opacity value  " << endl
+  << "  -op value  " << endl
   << "     Value for opacity of overlay." << endl
   << "     Default value: " << defaultAlpha << endl
   << endl
   << "  -white  " << endl
   << "     Use white background" << endl
   << endl
+  << "  -fire  " << endl
+  << "     Use custom fire colorbar 1 (default jet)." << endl
+  << "  -bipolar  " << endl
+  << "     Use custom bipolar colorbar 1 (default jet)." << endl
   << "  -c1  " << endl
   << "     Use custom rainbow colorbar 1 (default jet)." << endl
   << "  -c2  " << endl
   << "     Use custom rainbow colorbar 2 (default jet)." << endl
   << "  -c3  " << endl
   << "     Use custom rainbow colorbar 3 (default jet)." << endl
-  << "  -gray  " << endl
-  << "     Use gray colorbar (default jet)." << endl
-  << "  -redyellow  " << endl
-  << "     Use red-yellow colorbar (default jet)." << endl
-  << "  -bluecyan  " << endl
-  << "     Use blue-cyan colorbar (default jet)." << endl
-  << "  -yellowred  " << endl
-  << "     Use yellow-red colorbar (default jet)." << endl
-  << "  -cyanblue  " << endl
-  << "     Use cyan-blue colorbar (default jet)." << endl
-  << "  -bluegreen  " << endl
-  << "     Use blue-green colorbar (default jet)." << endl
-  << "  -greenblue  " << endl
-  << "     Use green-blue colorbar (default jet)." << endl
   << endl
   << " Output:" << endl
   << "  -size xsize ysize  " << endl
+  << "  -sz xsize ysize  " << endl
   << "     Window size." << endl
   << "     Default value: " << defaultWindowSize[0] << " " << defaultWindowSize[1] << endl
   << endl
   << "  -output output.png  " << endl
+  << "  -save output.png  " << endl
   << "     Save as png-file or skip extension to save image with the overlay or mesh name as png." << endl
   << endl
   << "KEYBOARD INTERACTIONS" << endl

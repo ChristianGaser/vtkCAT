@@ -55,33 +55,39 @@ int main(int argc, char* argv[])
   int inverse = defaultInverse;
   int bkgWhite = defaultBkg;
   int printStats = 0;
+  int clipFullColors = 0;
   int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
   bool rhExists;
 
-  for (int j = 1; j < argc; j++) {
+  for (auto j = 1; j < argc; j++) {
     if (argv[j][0] != '-') {
       indx = j;
       break;
    }
-   else if (strcmp(argv[j], "-range") == 0) {
+   else if (strcmp(argv[j], "-range") == 0 || strcmp(argv[j], "-r") == 0) {
      j++; overlayRange[0] = atof(argv[j]);
      j++; overlayRange[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-range-bkg") == 0) {
+   else if (strcmp(argv[j], "-range-bkg") == 0 || strcmp(argv[j], "-rb") == 0) {
      j++; overlayRangeBkg[0] = atof(argv[j]);
      j++; overlayRangeBkg[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-clip") == 0) {
+   else if (strcmp(argv[j], "-clip") == 0 || strcmp(argv[j], "-cl") == 0) {
      j++; clipRange[0] = atof(argv[j]);
      j++; clipRange[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-size") == 0) {
+   else if (strcmp(argv[j], "-clip2") == 0 || strcmp(argv[j], "-cl2") == 0) {
+     j++; clipRange[0] = atof(argv[j]);
+     j++; clipRange[1] = atof(argv[j]);
+     clipFullColors = 1;
+   }
+   else if (strcmp(argv[j], "-size") == 0 || strcmp(argv[j], "-sz") == 0) {
      j++; WindowSize[0] = atoi(argv[j]);
      j++; WindowSize[1] = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-scalar") == 0 || strcmp(argv[j], "-overlay") == 0) {
+   else if (strcmp(argv[j], "-scalar") == 0 || strcmp(argv[j], "-overlay") == 0 || strcmp(argv[j], "-ov") == 0) {
      j++; overlayFileNameL = argv[j];
      overlay = 1;
    }
@@ -93,48 +99,38 @@ int main(int argc, char* argv[])
      j++; overlayFileNameBkgL = argv[j];
      overlayBkg = 1;
    }
-   else if (strcmp(argv[j], "-output") == 0) {
+   else if (strcmp(argv[j], "-output") == 0 || strcmp(argv[j], "-save") == 0) {
      j++; outputFileName = argv[j];
      saveImage = 1;
    }
-   else if (strcmp(argv[j], "-fontsize") == 0) {
+   else if (strcmp(argv[j], "-fontsize") == 0 || strcmp(argv[j], "-fs") == 0) {
      j++; fontSize = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-opacity") == 0) {
+   else if (strcmp(argv[j], "-opacity") == 0 || strcmp(argv[j], "-op") == 0) {
      j++; alpha = atof(argv[j]);
    }
    else if (strcmp(argv[j], "-stats") == 0)
      printStats = 1;
    else if (strcmp(argv[j], "-inverse") == 0)
      inverse = 1;
-   else if (strcmp(argv[j], "-colorbar") == 0) 
+   else if (strcmp(argv[j], "-colorbar") == 0 || strcmp(argv[j], "-cb") == 0) 
      colorbar = 1;
-   else if (strcmp(argv[j], "-colorbar2") == 0) 
+   else if (strcmp(argv[j], "-colorbar2") == 0 || strcmp(argv[j], "-cb2") == 0) 
      colorbar = 2;
    else if (strcmp(argv[j], "-log") == 0)
      logColorbar = 1;
    else if (strcmp(argv[j], "-white") == 0) 
     bkgWhite = 1;
+   else if (strcmp(argv[j], "-fire") == 0) 
+    colormap = FIRE;
+   else if (strcmp(argv[j], "-bipolar") == 0) 
+    colormap = BIPOLAR;
    else if (strcmp(argv[j], "-c1") == 0) 
     colormap = C1;
    else if (strcmp(argv[j], "-c2") == 0) 
     colormap = C2;
    else if (strcmp(argv[j], "-c3") == 0) 
     colormap = C3;
-   else if (strcmp(argv[j], "-gray") == 0) 
-    colormap = GRAY;
-   else if (strcmp(argv[j], "-redyellow") == 0) 
-    colormap = REDYELLOW;
-   else if (strcmp(argv[j], "-bluecyan") == 0) 
-    colormap = BLUECYAN;
-   else if (strcmp(argv[j], "-yellowred") == 0) 
-    colormap = YELLOWRED;
-   else if (strcmp(argv[j], "-cyanblue") == 0) 
-    colormap = CYANBLUE;
-   else if (strcmp(argv[j], "-bluegreen") == 0) 
-    colormap = BLUEGREEN;
-   else if (strcmp(argv[j], "-greenblue") == 0) 
-    colormap = GREENBLUE;
    else {
      cout << endl;
      cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
@@ -334,7 +330,7 @@ int main(int argc, char* argv[])
   for (auto i = 0; i < nMeshes; i++) {
 
     // Get LUT for colormap
-    lookupTable[i] = getLookupTable(colormap,alpha);
+    lookupTable[i] = getLookupTable(colormap,alpha,overlayRange,clipRange,clipFullColors);
   
     if (overlayRange[1] > overlayRange[0])
       lookupTable[i]->SetTableRange( overlayRange );

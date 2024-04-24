@@ -18,7 +18,7 @@ namespace fs = std::__fs::filesystem;
 using namespace std;
 
 typedef enum ColorMap {
-    C1, C2, C3, JET, GRAY, REDYELLOW, BLUECYAN, YELLOWRED, CYANBLUE, BLUEGREEN, GREENBLUE
+    C1, C2, C3, JET, HOT, FIRE, BIPOLAR, GRAY
 } ColorMap;
 
 static double defaultScalarRange[2] = { 0.0, -1.0 };
@@ -43,6 +43,7 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
     vtkLookupTable* lookupTable, vtkLookupTable* lookupTableColorBar, const double overlayRange[], 
     const double clipRange[], int colorbar, bool bkgWhite, int fontSize, bool logColorbar, 
     bool printStats, vtkRenderer* renderer, const char* Title, double alpha);
-vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha);
+vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha, 
+    double overlayRange[], double clipRange[], int clip2);
 
 #endif // vtkUtils_h
