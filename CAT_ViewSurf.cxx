@@ -47,6 +47,28 @@ static int defaultInverse = 0;
 static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1800, 1000 };
 
+// Linspace function similar to Matlab/Python
+template<typename T>
+std::vector<T> linspace(T start, T end, int num) {
+    std::vector<T> result;
+    if (num < 2) {
+        result.push_back(start);
+        return result;
+    }
+
+    T step = (end - start) / (num - 1);
+    for (int i = 0; i < num; ++i) {
+        result.push_back(start + i * step);
+    }
+
+    // Ensure last value is exactly 'end' due to possible floating-point arithmetic issues
+    if (num > 1) {
+        result.back() = end;
+    }
+
+    return result;
+}
+
 // Obtain LookUpTable for defined colormap
 vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha)
 {
@@ -192,10 +214,16 @@ usage(const char* const prog)
   << "     Show colorbar (default no)." << endl
   << endl
   << "  -colorbar2  " << endl
-  << "     Show discrete colorbar (default no)." << endl
+  << "     Show discrete colorbar with gaps (default no)." << endl
   << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl
+  << endl
+  << "  -fontsize  " << endl
+  << "     Set font size for colorbar." << endl
+  << endl
+  << "  -log  " << endl
+  << "     Use log-scaled colorbar (overlay values should be log-scaled)." << endl
   << endl
   << "  -inverse  " << endl
   << "     Invert input values." << endl
@@ -294,6 +322,7 @@ int main(int argc, char* argv[])
   int colormap = JET;
   int colorbar = defaultColorbar;
   int logColorbar = 0;
+  int fontSize = 0;
   int inverse = defaultInverse;
   int bkgWhite = defaultBkg;
   int printStats = 0;
@@ -338,6 +367,9 @@ int main(int argc, char* argv[])
    else if (strcmp(argv[j], "-output") == 0) {
      j++; outputFileName = argv[j];
      saveImage = 1;
+   }
+   else if (strcmp(argv[j], "-fontsize") == 0) {
+     j++; fontSize = atoi(argv[j]);
    }
    else if (strcmp(argv[j], "-opacity") == 0) {
      j++; alpha = atof(argv[j]);
@@ -738,10 +770,6 @@ int main(int argc, char* argv[])
     for (auto i=0; i < polyData[1]->GetNumberOfPoints(); i++)
       scalarLR->SetValue(i+polyData[0]->GetNumberOfPoints(),scalars[1]->GetValue(i));
 
-    vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
-    if (bkgWhite) textProperty->SetColor(black);
-    else textProperty->SetColor(white);
-
     for (auto i = 0; i < 256; i++) {
       double rgb[4];
       lookupTable[0]->GetTableValue(i, rgb);
@@ -761,7 +789,7 @@ int main(int argc, char* argv[])
         lookupTableColorBar->SetTableValue(i, 0.5, 0.5, 0.5, alpha);
     }
 
-    // Use discrete colorbar
+    // Use discrete colorbar with gaps
     if (colorbar == 2) {
       int steps = 8;
       for (auto i = 0; i < 256; i++) {        
@@ -774,6 +802,11 @@ int main(int argc, char* argv[])
 
     lookupTableColorBar->SetTableRange( overlayRange );
 
+    vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
+    if (bkgWhite) textProperty->SetColor(black);
+    else textProperty->SetColor(white);
+    if (fontSize) textProperty->SetFontSize(fontSize);
+
     vtkNew<vtkScalarBarActor> scalarBar;
     scalarBar->SetOrientationToHorizontal();
     scalarBar->SetLookupTable(lookupTableColorBar);
@@ -784,22 +817,46 @@ int main(int argc, char* argv[])
     // Replace label values by log-scaled values
     if (logColorbar) {
       scalarBar->SetNumberOfLabels(0); // Suppress labels
-      for (int i = ceil(overlayRange[0]); i < ceil(overlayRange[1]) + 1; ++i) {
+      
+      // Set color of annotation
+      scalarBar->SetAnnotationTextProperty(textProperty);      
+
+      for (int i = floor(overlayRange[0]); i < ceil(overlayRange[1]) + 1; ++i) {
         double value = (double) i;
-        std::array<char, 64> buffer;
-        if (value > 0)
-          std::snprintf(buffer.data(), buffer.size(), "%g", 1.0/pow(10,value));  
-        else if (value < 0)
-          std::snprintf(buffer.data(), buffer.size(), "%g", -1.0/pow(10,-value));
-        else
-          std::snprintf(buffer.data(), buffer.size(), "%g", 0.0);
-          
-        scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());   
+
+        array<char, 64> buffer;
+        
+        if (logColorbar) {
+          if (value > 0)
+            snprintf(buffer.data(), buffer.size(), "%g", 1.0/pow(10,value));  
+          else if (value < 0)
+            snprintf(buffer.data(), buffer.size(), "%g", -1.0/pow(10,-value));
+          else
+            snprintf(buffer.data(), buffer.size(), "%g", 0.0);
+        } else snprintf(buffer.data(), buffer.size(), "%g", value);  
+
+        scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());
+        scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());
       }
+    } else if (fontSize) {
+      scalarBar->SetNumberOfLabels(0); // Suppress labels
+      
+      // Set color of annotation
+      scalarBar->SetAnnotationTextProperty(textProperty);
+
+      auto vec = linspace(overlayRange[0], overlayRange[1], 5);
+  
+      for (auto value : vec) {
+        array<char, 64> buffer;
+        snprintf(buffer.data(), buffer.size(), "%g", value);  
+          
+        scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());
+      }      
     }
     
-    scalarBar->GetLabelTextProperty()->ShallowCopy(textProperty);
-    scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
+    scalarBar->SetTitleTextProperty(textProperty);
+    scalarBar->SetLabelTextProperty(textProperty);
+
     scalarBar->GetTitleTextProperty()->SetLineOffset(-10); // Apply additional specific settings after copying
     scalarBar->GetTitleTextProperty()->BoldOn();
 
