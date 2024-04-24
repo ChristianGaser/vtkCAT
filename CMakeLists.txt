@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CAT_ViewSurf)
+project(vtkCAT)
 
 # Specify the C++ standard
 #set(CMAKE_CXX_STANDARD 11)
@@ -27,22 +27,21 @@ find_package(VTK COMPONENTS
   RenderingOpenGL2
 )
 
-#find_package(expat REQUIRED)
-
 TARGET_LINK_LIBRARIES(${gifticlib_LIBS})
 
 if (NOT VTK_FOUND)
-  message(FATAL_ERROR "CAT_ViewSurf: Unable to find the VTK build folder.")
+  message(FATAL_ERROR "vtkCAT: Unable to find the VTK build folder.")
 endif()
 
 # Prevent a "command line is too long" failure in Windows.
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE "ON" CACHE BOOL "Force Ninja to use response files.")
 
 add_executable(CAT_ViewSurf CAT_ViewSurf.cxx vtkSurfaceReader.cxx vtkStat.cxx)
+add_executable(CAT_ViewImage CAT_ViewImage.cxx vtkSurfaceReader.cxx)
 
 # vtk_module_autoinit is needed
 vtk_module_autoinit(
-  TARGETS CAT_ViewSurf
+  TARGETS CAT_ViewSurf CAT_ViewImage
   MODULES ${VTK_LIBRARIES}
 )
 
@@ -50,3 +49,4 @@ vtk_module_autoinit(
 target_include_directories(CAT_ViewSurf PRIVATE ${VTK_INCLUDE_DIRS} gifticlib)
 
 TARGET_LINK_LIBRARIES(CAT_ViewSurf PRIVATE ${VTK_LIBRARIES} gifticlib expat)
+TARGET_LINK_LIBRARIES(CAT_ViewImage PRIVATE ${VTK_LIBRARIES} gifticlib expat)
