@@ -36,7 +36,7 @@ endif()
 # Prevent a "command line is too long" failure in Windows.
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE "ON" CACHE BOOL "Force Ninja to use response files.")
 
-add_executable(CAT_ViewSurf CAT_ViewSurf.cxx vtkSurfaceReader.cxx vtkStat.cxx)
+add_executable(CAT_ViewSurf CAT_ViewSurf.cxx vtkSurfaceReader.cxx vtkStat.cxx vtkUtils.cxx)
 add_executable(CAT_ViewImage CAT_ViewImage.cxx vtkSurfaceReader.cxx)
 
 # vtk_module_autoinit is needed
