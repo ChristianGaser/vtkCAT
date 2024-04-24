@@ -192,7 +192,7 @@ usage(const char* const prog)
   << "     Show colorbar (default no)." << endl
   << endl
   << "  -colorbar2  " << endl
-  << "     Show blocked colorbar (default no)." << endl
+  << "     Show discrete colorbar (default no)." << endl
   << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl
@@ -293,6 +293,7 @@ int main(int argc, char* argv[])
   double val;
   int colormap = JET;
   int colorbar = defaultColorbar;
+  int logColorbar = 0;
   int inverse = defaultInverse;
   int bkgWhite = defaultBkg;
   int printStats = 0;
@@ -349,6 +350,8 @@ int main(int argc, char* argv[])
      colorbar = 1;
    else if (strcmp(argv[j], "-colorbar2") == 0) 
      colorbar = 2;
+   else if (strcmp(argv[j], "-log") == 0)
+     logColorbar = 1;
    else if (strcmp(argv[j], "-white") == 0) 
     bkgWhite = 1;
    else if (strcmp(argv[j], "-c1") == 0) 
@@ -409,7 +412,7 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkPolyDataMapper> mapper[2];
   vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
   
-  // check whether filename contains "lh." or "left" and replace filename with
+  // Check whether filename contains "lh." or "left" and replace filename with
   // name for the right hemisphere and check whether the file exists  
   string rhSurfName = argv[indx];
   if (rhSurfName.find("lh.") != string::npos) {
@@ -440,17 +443,17 @@ int main(int argc, char* argv[])
   
   fs::path currentPath = fs::current_path();
 
-  // read background scalars if defined
+  // Read background scalars if defined
   if (overlayBkg) {
     
     cout << "Read underlays: " << overlayFileNameBkgL << endl;
     
     scalarsBkg[0] = readScalars(overlayFileNameBkgL);
     
-    // if defined, read right hemispheric overlay
+    // If defined, read right hemispheric overlay
     if ((nMeshes > 1) && rhExists) {
 
-      // try replacing lh/left by rh/right in the overlay filename
+      // Try replacing lh/left by rh/right in the overlay filename
       string overlayFileNameR = overlayFileNameBkgL;
       if (overlayFileNameR.find("lh.") != string::npos) {
         vtksys::SystemTools::ReplaceString(overlayFileNameR,string("lh."),string("rh."));
@@ -532,7 +535,7 @@ int main(int argc, char* argv[])
 
   for (auto i = 0; i < actor.size(); ++i)
   {
-    // if only left hemisphere exists, then skip display of right hemipshere
+    // If only left hemisphere exists, then skip display of right hemipshere
     if ((nMeshes == 1) && (i % 2)) continue;
     
     position[0] = positionx[i];
@@ -540,7 +543,7 @@ int main(int argc, char* argv[])
     
     actorBkg[i]->SetMapper(mapperBkg[order[i]]);  
   
-    // configure the basic properties
+    // Configure the basic properties
     actorBkg[i]->GetProperty()->SetAmbient(0.8);
     actorBkg[i]->GetProperty()->SetDiffuse(0.7);
     actorBkg[i]->GetProperty()->SetSpecular(0.0);
@@ -552,7 +555,7 @@ int main(int argc, char* argv[])
     if (overlay) {
       actor[i]->SetMapper(mapper[order[i]]);
   
-      // configure the basic properties
+      // Configure the basic properties
       actor[i]->GetProperty()->SetAmbient(0.3);
       actor[i]->GetProperty()->SetDiffuse(0.7);
       actor[i]->GetProperty()->SetSpecular(0.0);
@@ -591,17 +594,17 @@ int main(int argc, char* argv[])
     string directoryPath = vtksys::SystemTools::GetFilenamePath(overlayFileNameL);
     string baseNameL = vtksys::SystemTools::GetFilenameName(overlayFileNameL);
     
-    // change current path
+    // Change current path
     fs::current_path(directoryPath);
     
     cout << "Read overlays: " << overlayFileNameL << endl;
     
     scalars[0] = readScalars(baseNameL.c_str());
     
-    // if defined, read right hemispheric overlay
+    // If defined, read right hemispheric overlay
     if ((nMeshes > 1) && rhExists) {
 
-      // try replacing lh/left by rh/right in the overlay filename
+      // Try replacing lh/left by rh/right in the overlay filename
       string overlayFileNameR = baseNameL.c_str();
       if (overlayFileNameR.find("lh.") != string::npos) {
         vtksys::SystemTools::ReplaceString(overlayFileNameR,string("lh."),string("rh."));
@@ -626,7 +629,7 @@ int main(int argc, char* argv[])
         }
       }
       
-      // go back to current folder
+      // Go back to current folder
       fs::current_path(currentPath);
     }
     
@@ -642,7 +645,7 @@ int main(int argc, char* argv[])
       return(-1);
     }
 
-    // clip values if defined
+    // Clip values if defined
     if (clipRange[1] > clipRange[0]) {
       for (auto i = 0; i < nMeshes; i++) {
         for (auto k = 0; k < polyData[0]->GetNumberOfPoints(); k++) {
@@ -679,10 +682,10 @@ int main(int argc, char* argv[])
   if (title == 0) Title = strTmp.c_str();
 
 
-  // build colormap
+  // Build colormap
   for (auto i = 0; i < nMeshes; i++) {
 
-    // get LUT for colormap
+    // Get LUT for colormap
     lookupTable[i] = getLookupTable(colormap,alpha);
   
     if (overlayRange[1] > overlayRange[0])
@@ -690,7 +693,7 @@ int main(int argc, char* argv[])
     if (clipRange[1] > clipRange[0])
       lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
 
-    // set opacity  
+    // Set opacity  
     lookupTable[i]->SetAlphaRange( alpha, alpha );
 
     lookupTable[i]->Build();
@@ -714,7 +717,7 @@ int main(int argc, char* argv[])
     mapperBkg[i]->SetLookupTable( lookupTableBkg );
   }
   
-  // An interactor
+  // Create interactor
   vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
   renderWindowInteractor->SetRenderWindow(renderWindow);
 
@@ -745,8 +748,6 @@ int main(int argc, char* argv[])
       lookupTableColorBar->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
     }
 
-    lookupTableColorBar->SetTableRange( overlayRange );
-
     if (clipRange[1] > clipRange[0]) {
       int start = 0, end = 256;
       
@@ -760,15 +761,18 @@ int main(int argc, char* argv[])
         lookupTableColorBar->SetTableValue(i, 0.5, 0.5, 0.5, alpha);
     }
 
-    // Use blocked colorbar
+    // Use discrete colorbar
     if (colorbar == 2) {
-      for (auto i = 0; i < 256; i++) {
-        if ((i % 16) == 0) {
+      int steps = 8;
+      for (auto i = 0; i < 256; i++) {        
+        if ((i % steps) == 0) {
           if (bkgWhite) lookupTableColorBar->SetTableValue(i, 1.0, 1.0, 1.0, 0);
           else lookupTableColorBar->SetTableValue(i, 0.0, 0.0, 0.0, 0);
         }
       }
     }
+
+    lookupTableColorBar->SetTableRange( overlayRange );
 
     vtkNew<vtkScalarBarActor> scalarBar;
     scalarBar->SetOrientationToHorizontal();
@@ -776,11 +780,28 @@ int main(int argc, char* argv[])
     scalarBar->SetWidth(0.3);
     scalarBar->SetHeight(0.05);
     scalarBar->SetPosition(0.35, 0.05);
+
+    // Replace label values by log-scaled values
+    if (logColorbar) {
+      scalarBar->SetNumberOfLabels(0); // Suppress labels
+      for (int i = ceil(overlayRange[0]); i < ceil(overlayRange[1]) + 1; ++i) {
+        double value = (double) i;
+        std::array<char, 64> buffer;
+        if (value > 0)
+          std::snprintf(buffer.data(), buffer.size(), "%g", 1.0/pow(10,value));  
+        else if (value < 0)
+          std::snprintf(buffer.data(), buffer.size(), "%g", -1.0/pow(10,-value));
+        else
+          std::snprintf(buffer.data(), buffer.size(), "%g", 0.0);
+          
+        scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());   
+      }
+    }
     
     scalarBar->GetLabelTextProperty()->ShallowCopy(textProperty);
     scalarBar->GetTitleTextProperty()->ShallowCopy(textProperty);
     scalarBar->GetTitleTextProperty()->SetLineOffset(-10); // Apply additional specific settings after copying
-    scalarBar->GetTitleTextProperty()->BoldOn(); 
+    scalarBar->GetTitleTextProperty()->BoldOn();
 
     char info[150];
     snprintf(info, sizeof(info), "Mean=%.3f Median=%.3f SD=%.3f", get_mean(scalarLR), get_median(scalarLR), get_std(scalarLR));
@@ -814,7 +835,7 @@ int main(int argc, char* argv[])
 
     } else imageFilename = outputFileName;
     
-    // we have to rescue fullpath, since we changed folder
+    // We have to rescue fullpath, since we changed folder
     cout << "Write: " << imageFilename << endl; 
 
     // Create a window to image filter
