@@ -191,6 +191,9 @@ usage(const char* const prog)
   << "  -colorbar  " << endl
   << "     Show colorbar (default no)." << endl
   << endl
+  << "  -colorbar2  " << endl
+  << "     Show blocked colorbar (default no)." << endl
+  << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl
   << endl
@@ -344,6 +347,8 @@ int main(int argc, char* argv[])
      inverse = 1;
    else if (strcmp(argv[j], "-colorbar") == 0) 
      colorbar = 1;
+   else if (strcmp(argv[j], "-colorbar2") == 0) 
+     colorbar = 2;
    else if (strcmp(argv[j], "-white") == 0) 
     bkgWhite = 1;
    else if (strcmp(argv[j], "-c1") == 0) 
@@ -386,6 +391,7 @@ int main(int argc, char* argv[])
   lookupTable[0] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   lookupTable[1] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableBkg = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableColorBar = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
 
   vtkSmartPointer<vtkDoubleArray> scalarsBkg[2];
   scalarsBkg[0] = vtkSmartPointer<vtkDoubleArray>::New();
@@ -496,9 +502,18 @@ int main(int argc, char* argv[])
     mapperBkg[i] = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapperBkg[i]->SetInputData(curvaturesMesh[i]);
 
+    // Automatically estimate background range
     if (overlayRangeBkg[1] < overlayRangeBkg[0])
       curvaturesMesh[i]->GetScalarRange( overlayRangeBkg );
 
+    // Use symmetric background range
+    if (overlayRangeBkg[0] < 0 && overlayRangeBkg[1] > 0) {
+      if (-overlayRangeBkg[0] > overlayRangeBkg[1])
+        overlayRangeBkg[0] = -overlayRangeBkg[1];
+      else
+        overlayRangeBkg[1] = -overlayRangeBkg[0];
+    }
+      
   }
 
   // Create actor
@@ -600,8 +615,7 @@ int main(int argc, char* argv[])
       if (rhExists)
         scalars[1] = readScalars(overlayFileNameR.c_str());
       else {
-        // or split the single overlay (which is merged) into left and right
-        // overlay
+        // or split the single overlay (which is merged) into left and right overlay
         try {
           scalars[1]->SetNumberOfTuples(polyData[0]->GetNumberOfPoints());
           for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
@@ -671,7 +685,8 @@ int main(int argc, char* argv[])
     // get LUT for colormap
     lookupTable[i] = getLookupTable(colormap,alpha);
   
-    lookupTable[i]->SetTableRange( overlayRange );
+    if (overlayRange[1] > overlayRange[0])
+      lookupTable[i]->SetTableRange( overlayRange );
     if (clipRange[1] > clipRange[0])
       lookupTable[i]->SetEnabledArray(polyData[i]->GetPointData()->GetScalars());
 
@@ -724,9 +739,40 @@ int main(int argc, char* argv[])
     if (bkgWhite) textProperty->SetColor(black);
     else textProperty->SetColor(white);
 
+    for (auto i = 0; i < 256; i++) {
+      double rgb[4];
+      lookupTable[0]->GetTableValue(i, rgb);
+      lookupTableColorBar->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
+    }
+
+    lookupTableColorBar->SetTableRange( overlayRange );
+
+    if (clipRange[1] > clipRange[0]) {
+      int start = 0, end = 256;
+      
+      if (clipRange[0] > overlayRange[0])
+        start = round(256*(clipRange[0] - overlayRange[0])/(overlayRange[1] - overlayRange[0]));
+        
+      if (clipRange[1] > overlayRange[0])
+        end = round(256*(clipRange[1] - overlayRange[0])/(overlayRange[1] - overlayRange[0]));
+  
+      for (auto i = start; i < end; i++)
+        lookupTableColorBar->SetTableValue(i, 0.5, 0.5, 0.5, alpha);
+    }
+
+    // Use blocked colorbar
+    if (colorbar == 2) {
+      for (auto i = 0; i < 256; i++) {
+        if ((i % 16) == 0) {
+          if (bkgWhite) lookupTableColorBar->SetTableValue(i, 1.0, 1.0, 1.0, 0);
+          else lookupTableColorBar->SetTableValue(i, 0.0, 0.0, 0.0, 0);
+        }
+      }
+    }
+
     vtkNew<vtkScalarBarActor> scalarBar;
     scalarBar->SetOrientationToHorizontal();
-    scalarBar->SetLookupTable(lookupTable[0]);
+    scalarBar->SetLookupTable(lookupTableColorBar);
     scalarBar->SetWidth(0.3);
     scalarBar->SetHeight(0.05);
     scalarBar->SetPosition(0.35, 0.05);
@@ -776,7 +822,6 @@ int main(int argc, char* argv[])
     windowToImageFilter->SetInput(renderWindow);
     windowToImageFilter->SetScale(1); // Adjust the scale of the output image if needed
     windowToImageFilter->ReadFrontBufferOff(); // Read from the back buffer
-    windowToImageFilter->SetInputBufferTypeToRGBA(); // Also capture the alpha (transparency) channel
     windowToImageFilter->Update();
     
     // Create a PNG writer
