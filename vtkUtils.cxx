@@ -22,7 +22,7 @@ std::vector<T> linspace(T start, T end, int num) {
     return result;
 }
 
-void ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkPolyData> polyData[], vtkSmartPointer<vtkDoubleArray> scalarsBkg[], int nMeshes, bool& rhExists, string& rhSurfName) {
+int ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkPolyData> polyData[], vtkSmartPointer<vtkDoubleArray> scalarsBkg[], int nMeshes, bool& rhExists, string& rhSurfName) {
   bool rhExistsBkg;
   
   cout << "Read underlays: " << overlayFileNameBkgL << endl;
@@ -52,19 +52,21 @@ void ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkP
         for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
           scalarsBkg[1]->SetValue(i,scalarsBkg[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
       } catch (const exception& e) {
-        cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameBkgL << endl;
-        //return(-1);
+        cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameBkgL << " " << e.what() << endl;
+        return EXIT_FAILURE;;
       }
     }
   }
   
   if (scalarsBkg[0] == NULL) {
     cerr << "Error reading file " << overlayFileNameBkgL << endl;
-    //return(-1);
+    return EXIT_FAILURE;;
   }
+  return EXIT_SUCCESS;
 }
 
-void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> polyData[], vtkSmartPointer<vtkDoubleArray> scalars[], int nMeshes, bool rhExists, const string& rhSurfName, bool inverse, double clipRange[], fs::path currentPath, double overlayRange[]) {
+int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> polyData[], vtkSmartPointer<vtkDoubleArray> scalars[], int nMeshes, bool rhExists, const string& rhSurfName, bool inverse, double clipRange[], fs::path currentPath, double overlayRange[]) {
+  
   // Since the dat-file is otherwise not found, we have to go into the folder
   // of the overlay data to ensure that the gii/dat files are correctly read
   string directoryPath = vtksys::SystemTools::GetFilenamePath(overlayFileNameL);
@@ -100,7 +102,8 @@ void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> 
         for (auto i=0; i < polyData[0]->GetNumberOfPoints(); i++)
           scalars[1]->SetValue(i,scalars[0]->GetValue(i+polyData[1]->GetNumberOfPoints()));
       } catch (const exception& e) {
-        cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameL << endl;
+        cerr << "Error splitting values for left/right hemisphere in file " << overlayFileNameL << " " << e.what() << endl;
+        return EXIT_FAILURE;;
       }
     }
     
@@ -117,6 +120,7 @@ void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> 
   
   if (scalars[0] == NULL) {
     cerr << "Error reading file " << overlayFileNameL << endl;
+    return EXIT_FAILURE;;
   }
 
   // Clip values if defined
@@ -128,6 +132,17 @@ void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> 
           scalars[i]->SetValue(k,0.0);
       }
     }
+  } else {
+    for (auto i = 0; i < nMeshes; i++) {
+      for (auto k = 0; k < polyData[0]->GetNumberOfPoints(); k++) {
+        double val = scalars[i]->GetValue(k);
+        if (isnan(val)) {
+          scalars[i]->SetValue(k,0.0);
+          clipRange[0] = 0;
+          clipRange[1] = 1E-15;
+        }
+      }
+    }
   }
   
   for (auto i = 0; i < nMeshes; i++) {
@@ -135,6 +150,7 @@ void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> 
     if (overlayRange[1] < overlayRange[0])
       polyData[i]->GetScalarRange( overlayRange );
   }
+  return EXIT_SUCCESS;
 }
 
 void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArray> scalars[], vtkLookupTable* lookupTable, vtkLookupTable* lookupTableColorBar, const double overlayRange[], const double clipRange[], int colorbar, bool bkgWhite, int fontSize, bool logColorbar, bool printStats, vtkRenderer* renderer, const char* Title, double alpha) {
@@ -174,7 +190,7 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
   if (colorbar == 2) {
     int steps = 8;
     for (auto i = 0; i < 256; i++) {        
-      if ((i % steps) == 0) {
+      if (!(i % steps)) {
         if (bkgWhite) lookupTableColorBar->SetTableValue(i, 1.0, 1.0, 1.0, 0);
         else lookupTableColorBar->SetTableValue(i, 0.0, 0.0, 0.0, 0);
       }
@@ -182,6 +198,7 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
   }
 
   lookupTableColorBar->SetTableRange( overlayRange );
+  lookupTableColorBar->SetAlphaRange( alpha, alpha );
 
   vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
   if (bkgWhite) textProperty->SetColor(black);

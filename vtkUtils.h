@@ -32,10 +32,10 @@ static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1800, 1000 };
 
 void usage(const char* const prog);
-void ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkPolyData> polyData[], 
+int ReadBackgroundScalars(const char* overlayFileNameBkgL, vtkSmartPointer<vtkPolyData> polyData[], 
     vtkSmartPointer<vtkDoubleArray> scalarsBkg[], int nMeshes, bool& rhExists, 
     string& rhSurfName);
-void ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> polyData[], 
+int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> polyData[], 
     vtkSmartPointer<vtkDoubleArray> scalars[], int nMeshes, bool rhExists, 
     const string& rhSurfName, bool inverse, double clipRange[], fs::path currentPath, 
     double overlayRange[]);

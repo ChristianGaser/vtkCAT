@@ -197,7 +197,7 @@ vtkSmartPointer<vtkDoubleArray> ReadGIFTICurv(const char *file)
   }
 
   valid = gifti_valid_gifti_image (image, 1);
-  if (valid == 0) {
+  if (!valid) {
     gifti_free_image (image);
     throw std::runtime_error("ReadGIFTICurv: GIFTI file is invalid");
   }
@@ -306,7 +306,7 @@ vtkSmartPointer<vtkPolyData> ReadGIFTIMesh(const char* filename)
   }
 
   int valid = gifti_valid_gifti_image (gimage, 1);
-  if (valid == 0) {
+  if (!valid) {
     throw std::runtime_error("ReadGIFTIMesh; Failed to read GIFTI file.");
   }
 

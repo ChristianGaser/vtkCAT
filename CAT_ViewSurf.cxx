@@ -66,70 +66,70 @@ int main(int argc, char* argv[])
       indx = j;
       break;
    }
-   else if (strcmp(argv[j], "-range") == 0 || strcmp(argv[j], "-r") == 0) {
+   else if (!strcmp(argv[j], "-range") || !strcmp(argv[j], "-r")) {
      j++; overlayRange[0] = atof(argv[j]);
      j++; overlayRange[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-range-bkg") == 0 || strcmp(argv[j], "-rb") == 0) {
+   else if (!strcmp(argv[j], "-range-bkg") || !strcmp(argv[j], "-rb")) {
      j++; overlayRangeBkg[0] = atof(argv[j]);
      j++; overlayRangeBkg[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-clip") == 0 || strcmp(argv[j], "-cl") == 0) {
+   else if (!strcmp(argv[j], "-clip") || !strcmp(argv[j], "-cl")) {
      j++; clipRange[0] = atof(argv[j]);
      j++; clipRange[1] = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-clip2") == 0 || strcmp(argv[j], "-cl2") == 0) {
+   else if (!strcmp(argv[j], "-clip2") || !strcmp(argv[j], "-cl2")) {
      j++; clipRange[0] = atof(argv[j]);
      j++; clipRange[1] = atof(argv[j]);
      clipFullColors = 1;
    }
-   else if (strcmp(argv[j], "-size") == 0 || strcmp(argv[j], "-sz") == 0) {
+   else if (!strcmp(argv[j], "-size") || !strcmp(argv[j], "-sz")) {
      j++; WindowSize[0] = atoi(argv[j]);
      j++; WindowSize[1] = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-scalar") == 0 || strcmp(argv[j], "-overlay") == 0 || strcmp(argv[j], "-ov") == 0) {
+   else if (!strcmp(argv[j], "-scalar") || !strcmp(argv[j], "-overlay") || !strcmp(argv[j], "-ov")) {
      j++; overlayFileNameL = argv[j];
      overlay = 1;
    }
-   else if (strcmp(argv[j], "-title") == 0) {
+   else if (!strcmp(argv[j], "-title")) {
      j++; Title = argv[j];
      title = 1;
    }
-   else if (strcmp(argv[j], "-bkg") == 0) {
+   else if (!strcmp(argv[j], "-bkg")) {
      j++; overlayFileNameBkgL = argv[j];
      overlayBkg = 1;
    }
-   else if (strcmp(argv[j], "-output") == 0 || strcmp(argv[j], "-save") == 0) {
+   else if (!strcmp(argv[j], "-output") || !strcmp(argv[j], "-save")) {
      j++; outputFileName = argv[j];
      saveImage = 1;
    }
-   else if (strcmp(argv[j], "-fontsize") == 0 || strcmp(argv[j], "-fs") == 0) {
+   else if (!strcmp(argv[j], "-fontsize") || !strcmp(argv[j], "-fs")) {
      j++; fontSize = atoi(argv[j]);
    }
-   else if (strcmp(argv[j], "-opacity") == 0 || strcmp(argv[j], "-op") == 0) {
+   else if (!strcmp(argv[j], "-opacity") || !strcmp(argv[j], "-op")) {
      j++; alpha = atof(argv[j]);
    }
-   else if (strcmp(argv[j], "-stats") == 0)
+   else if (!strcmp(argv[j], "-stats"))
      printStats = 1;
-   else if (strcmp(argv[j], "-inverse") == 0)
+   else if (!strcmp(argv[j], "-inverse"))
      inverse = 1;
-   else if (strcmp(argv[j], "-colorbar") == 0 || strcmp(argv[j], "-cb") == 0) 
+   else if (!strcmp(argv[j], "-colorbar") || !strcmp(argv[j], "-cb")) 
      colorbar = 1;
-   else if (strcmp(argv[j], "-colorbar2") == 0 || strcmp(argv[j], "-cb2") == 0) 
+   else if (!strcmp(argv[j], "-colorbar2") || !strcmp(argv[j], "-cb2")) 
      colorbar = 2;
-   else if (strcmp(argv[j], "-log") == 0)
+   else if (!strcmp(argv[j], "-log"))
      logColorbar = 1;
-   else if (strcmp(argv[j], "-white") == 0) 
+   else if (!strcmp(argv[j], "-white")) 
     bkgWhite = 1;
-   else if (strcmp(argv[j], "-fire") == 0) 
+   else if (!strcmp(argv[j], "-fire")) 
     colormap = FIRE;
-   else if (strcmp(argv[j], "-bipolar") == 0) 
+   else if (!strcmp(argv[j], "-bipolar")) 
     colormap = BIPOLAR;
-   else if (strcmp(argv[j], "-c1") == 0) 
+   else if (!strcmp(argv[j], "-c1")) 
     colormap = C1;
-   else if (strcmp(argv[j], "-c2") == 0) 
+   else if (!strcmp(argv[j], "-c2")) 
     colormap = C2;
-   else if (strcmp(argv[j], "-c3") == 0) 
+   else if (!strcmp(argv[j], "-c3")) 
     colormap = C3;
    else {
      cout << endl;
@@ -169,6 +169,12 @@ int main(int argc, char* argv[])
   vtkSmartPointer<vtkPolyDataMapper> mapper[2];
   vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
   
+  // Check that file exists
+  if (!vtksys::SystemTools::FileExists(argv[indx])) {
+    cerr << "ERROR: File " << argv[indx] << " not found." << endl;
+    return EXIT_FAILURE;
+  }
+
   // Check whether filename contains "lh." or "left" and replace filename with
   // name for the right hemisphere and check whether the file exists  
   string rhSurfName = argv[indx];
@@ -201,9 +207,18 @@ int main(int argc, char* argv[])
   fs::path currentPath = fs::current_path();
 
   // Read background scalars if defined
-  if (overlayBkg)
-    ReadBackgroundScalars(overlayFileNameBkgL, polyData, scalarsBkg, nMeshes, rhExists, rhSurfName);
-
+  if (overlayBkg) {
+    // Check that file exists
+    if (!vtksys::SystemTools::FileExists(overlayFileNameBkgL)) {
+      cerr << "ERROR: File " << overlayFileNameBkgL << " not found." << endl;
+      return EXIT_FAILURE;
+    }
+    if (ReadBackgroundScalars(overlayFileNameBkgL, polyData, scalarsBkg, nMeshes, rhExists, rhSurfName)) {
+      cerr << "ERROR: File " << overlayFileNameBkgL << " could not be read." << endl;
+      return EXIT_FAILURE;
+    }
+  }
+  
   for (auto i = 0; i < nMeshes; i++) {
   
     curvature[i]->SetInputData(polyData[i]);
@@ -234,7 +249,6 @@ int main(int argc, char* argv[])
       else
         overlayRangeBkg[1] = -overlayRangeBkg[0];
     }
-      
   }
 
   // Create actor
@@ -304,9 +318,17 @@ int main(int argc, char* argv[])
     if (overlay) renderer->AddActor(actor[i]);
   }
 
-  // read scalars if defined
-  if (overlay)
-    ReadAndUpdateScalars(overlayFileNameL, polyData, scalars, nMeshes, rhExists, rhSurfName, inverse, clipRange, currentPath, overlayRange);
+  // Read scalars if defined
+  if (overlay) {
+    if (!vtksys::SystemTools::FileExists(overlayFileNameL)) {
+      cerr << "ERROR: File " << overlayFileNameL << " not found." << endl;
+      return EXIT_FAILURE;
+    }
+    if (ReadAndUpdateScalars(overlayFileNameL, polyData, scalars, nMeshes, rhExists, rhSurfName, inverse, clipRange, currentPath, overlayRange)) {
+      cerr << "ERROR: File " << overlayFileNameL << " could not be read." << endl;
+      return EXIT_FAILURE;
+    }
+  }
   
   // Obtain the Title for colorbar, window and saved image
   fs::path baseNameL;
@@ -324,7 +346,7 @@ int main(int argc, char* argv[])
   vtksys::SystemTools::ReplaceString(strTmp,string(".txt"),string(""));
 
   // Set the title
-  if (title == 0) Title = strTmp.c_str();
+  if (!title) Title = strTmp.c_str();
 
   // Build colormap
   for (auto i = 0; i < nMeshes; i++) {
