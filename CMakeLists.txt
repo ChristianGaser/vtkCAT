@@ -4,8 +4,10 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(vtkCAT)
 
 # Specify the C++ standard
-#set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+ADD_DEFINITIONS(-DHAVE_ZLIB)
 
 SET(gifticlib_SRCS
     gifticlib/gifti_io.c
@@ -13,10 +15,29 @@ SET(gifticlib_SRCS
     gifticlib/gifti_xml.c
 )
 
+SET(zlib_SRCS
+    zlib/adler32.c
+    zlib/crc32.c
+    zlib/gzio.c
+    zlib/inffast.c
+    zlib/inftrees.c
+    zlib/trees.c
+    zlib/zutil.c
+    zlib/compress.c
+    zlib/deflate.c
+    zlib/infback.c
+    zlib/inflate.c
+    zlib/uncompr.c
+)
 ADD_LIBRARY(gifticlib STATIC ${gifticlib_SRCS})
+ADD_LIBRARY(zlib STATIC ${zlib_SRCS})
 
 SET(gifticlib_LIBS
   gifticlib
+)
+
+SET(zlib_LIBS
+  zlib
 )
 
 find_package(VTK COMPONENTS 
@@ -27,7 +48,7 @@ find_package(VTK COMPONENTS
   RenderingOpenGL2
 )
 
-TARGET_LINK_LIBRARIES(${gifticlib_LIBS})
+TARGET_LINK_LIBRARIES(${gifticlib_LIBS} ${zlib_LIBS})
 
 if (NOT VTK_FOUND)
   message(FATAL_ERROR "vtkCAT: Unable to find the VTK build folder.")
@@ -46,7 +67,7 @@ vtk_module_autoinit(
 )
 
 # If you have include directories for your application, specify them
-target_include_directories(CAT_ViewSurf PRIVATE ${VTK_INCLUDE_DIRS} gifticlib)
+target_include_directories(CAT_ViewSurf PRIVATE ${VTK_INCLUDE_DIRS} gifticlib zlib)
 
-TARGET_LINK_LIBRARIES(CAT_ViewSurf PRIVATE ${VTK_LIBRARIES} gifticlib expat)
+TARGET_LINK_LIBRARIES(CAT_ViewSurf PRIVATE ${VTK_LIBRARIES} gifticlib expat zlib)
 TARGET_LINK_LIBRARIES(CAT_ViewImage PRIVATE ${VTK_LIBRARIES} gifticlib expat)
