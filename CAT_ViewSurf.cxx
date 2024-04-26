@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
   int logColorbar = 0;
   int fontSize = 0;
   int inverse = defaultInverse;
+  int discrete = defaultDiscrete;
   int bkgWhite = defaultBkg;
   int printStats = 0;
-  int clipFullColors = 0;
   int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
@@ -65,84 +65,86 @@ int main(int argc, char* argv[])
     if (argv[j][0] != '-') {
       indx = j;
       break;
-   }
-   else if (!strcmp(argv[j], "-range") || !strcmp(argv[j], "-r")) {
-     j++; overlayRange[0] = atof(argv[j]);
-     j++; overlayRange[1] = atof(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-range-bkg") || !strcmp(argv[j], "-rb")) {
-     j++; overlayRangeBkg[0] = atof(argv[j]);
-     j++; overlayRangeBkg[1] = atof(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-clip") || !strcmp(argv[j], "-cl")) {
-     j++; clipRange[0] = atof(argv[j]);
-     j++; clipRange[1] = atof(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-clip2") || !strcmp(argv[j], "-cl2")) {
-     j++; clipRange[0] = atof(argv[j]);
-     j++; clipRange[1] = atof(argv[j]);
-     clipFullColors = 1;
-   }
-   else if (!strcmp(argv[j], "-size") || !strcmp(argv[j], "-sz")) {
-     j++; WindowSize[0] = atoi(argv[j]);
-     j++; WindowSize[1] = atoi(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-scalar") || !strcmp(argv[j], "-overlay") || !strcmp(argv[j], "-ov")) {
-     j++; overlayFileNameL = argv[j];
-     overlay = 1;
-   }
-   else if (!strcmp(argv[j], "-title")) {
-     j++; Title = argv[j];
-     title = 1;
-   }
-   else if (!strcmp(argv[j], "-bkg")) {
-     j++; overlayFileNameBkgL = argv[j];
-     overlayBkg = 1;
-   }
-   else if (!strcmp(argv[j], "-output") || !strcmp(argv[j], "-save")) {
-     j++; outputFileName = argv[j];
-     saveImage = 1;
-   }
-   else if (!strcmp(argv[j], "-fontsize") || !strcmp(argv[j], "-fs")) {
-     j++; fontSize = atoi(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-opacity") || !strcmp(argv[j], "-op")) {
-     j++; alpha = atof(argv[j]);
-   }
-   else if (!strcmp(argv[j], "-stats"))
-     printStats = 1;
-   else if (!strcmp(argv[j], "-inverse"))
-     inverse = 1;
-   else if (!strcmp(argv[j], "-colorbar") || !strcmp(argv[j], "-cb")) 
-     colorbar = 1;
-   else if (!strcmp(argv[j], "-colorbar2") || !strcmp(argv[j], "-cb2")) 
-     colorbar = 2;
-   else if (!strcmp(argv[j], "-log"))
-     logColorbar = 1;
-   else if (!strcmp(argv[j], "-white")) 
-    bkgWhite = 1;
-   else if (!strcmp(argv[j], "-fire")) 
-    colormap = FIRE;
-   else if (!strcmp(argv[j], "-bipolar")) 
-    colormap = BIPOLAR;
-   else if (!strcmp(argv[j], "-c1")) 
-    colormap = C1;
-   else if (!strcmp(argv[j], "-c2")) 
-    colormap = C2;
-   else if (!strcmp(argv[j], "-c3")) 
-    colormap = C3;
-   else {
-     cout << endl;
-     cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
-     cout << endl;
-     exit(1);
-   }
+    }
+    else if (!strcmp(argv[j], "-range") || !strcmp(argv[j], "-r")) {
+      j++; overlayRange[0] = atof(argv[j]);
+      j++; overlayRange[1] = atof(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-range-bkg") || !strcmp(argv[j], "-rb")) {
+      j++; overlayRangeBkg[0] = atof(argv[j]);
+      j++; overlayRangeBkg[1] = atof(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-clip") || !strcmp(argv[j], "-cl")) {
+      j++; clipRange[0] = atof(argv[j]);
+      j++; clipRange[1] = atof(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-size") || !strcmp(argv[j], "-sz")) {
+      j++; WindowSize[0] = atoi(argv[j]);
+      j++; WindowSize[1] = atoi(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-scalar") || !strcmp(argv[j], "-overlay") || !strcmp(argv[j], "-ov")) {
+      j++; overlayFileNameL = argv[j];
+      overlay = 1;
+    }
+    else if (!strcmp(argv[j], "-title")) {
+      j++; Title = argv[j];
+      title = 1;
+    }
+    else if (!strcmp(argv[j], "-bkg")) {
+      j++; overlayFileNameBkgL = argv[j];
+      overlayBkg = 1;
+    }
+    else if (!strcmp(argv[j], "-output") || !strcmp(argv[j], "-save")) {
+      j++; outputFileName = argv[j];
+      saveImage = 1;
+    }
+    else if (!strcmp(argv[j], "-fontsize") || !strcmp(argv[j], "-fs")) {
+      j++; fontSize = atoi(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-opacity") || !strcmp(argv[j], "-op")) {
+      j++; alpha = atof(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-stats"))
+      printStats = 1;
+    else if (!strcmp(argv[j], "-inverse"))
+      inverse = 1;
+    else if (!strcmp(argv[j], "-colorbar") || !strcmp(argv[j], "-cb")) 
+      colorbar = 1;
+    else if (!strcmp(argv[j], "-discrete") || !strcmp(argv[j], "-dsc")) {
+      j++; discrete = atoi(argv[j]);
+    }
+    else if (!strcmp(argv[j], "-log"))
+      logColorbar = 1;
+    else if (!strcmp(argv[j], "-white")) 
+     bkgWhite = 1;
+    else if (!strcmp(argv[j], "-fire")) 
+     colormap = FIRE;
+    else if (!strcmp(argv[j], "-bipolar")) 
+     colormap = BIPOLAR;
+    else if (!strcmp(argv[j], "-c1")) 
+     colormap = C1;
+    else if (!strcmp(argv[j], "-c2")) 
+     colormap = C2;
+    else if (!strcmp(argv[j], "-c3")) 
+     colormap = C3;
+    else {
+      cout << endl;
+      cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
+      cout << endl;
+      exit(1);
+    }
   }
   
   if (indx < 0) {
     usage(argv[0]);
     exit(1);
   }
+
+  if ((discrete < 0) || (discrete > 4)) {
+    cerr << "ERROR: Parameter 'discrete' should be 0..4." << endl;
+    return EXIT_FAILURE;
+  } else if (discrete)
+    discrete = pow(2, discrete+2);
 
   const int numArgs = argc - indx;
 
@@ -352,7 +354,7 @@ int main(int argc, char* argv[])
   for (auto i = 0; i < nMeshes; i++) {
 
     // Get LUT for colormap
-    lookupTable[i] = getLookupTable(colormap,alpha,overlayRange,clipRange,clipFullColors);
+    lookupTable[i] = getLookupTable(colormap,alpha,overlayRange,clipRange);
   
     if (overlayRange[1] > overlayRange[0])
       lookupTable[i]->SetTableRange( overlayRange );
@@ -392,11 +394,11 @@ int main(int argc, char* argv[])
 
   customStyle->SetCurrentRenderer(renderer);
   
-  // Create the scalarBar.
-  if (colorbar && overlay) {
+  // Create the scalarBar
+  if (overlay) {
     int n1 = polyData[0]->GetNumberOfPoints();
     int n2 = polyData[1]->GetNumberOfPoints();
-    UpdateScalarBarAndLookupTable(n1, n2, scalars, lookupTable[0], lookupTableColorBar, overlayRange, clipRange, colorbar, bkgWhite, fontSize, logColorbar, printStats, renderer, Title, alpha);
+    UpdateScalarBarAndLookupTable(n1, n2, scalars, lookupTable, lookupTableColorBar, overlayRange, clipRange, colorbar, discrete, bkgWhite, fontSize, logColorbar, printStats, renderer, Title, alpha);
   }
 
   // Zoom in to remove large empty areas

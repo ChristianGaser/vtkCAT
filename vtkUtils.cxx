@@ -153,8 +153,9 @@ int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> p
   return EXIT_SUCCESS;
 }
 
-void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArray> scalars[], vtkLookupTable* lookupTable, vtkLookupTable* lookupTableColorBar, const double overlayRange[], const double clipRange[], int colorbar, bool bkgWhite, int fontSize, bool logColorbar, bool printStats, vtkRenderer* renderer, const char* Title, double alpha) {
+void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArray> scalars[], vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable[], vtkLookupTableWithEnabling* lookupTableColorBar, const double overlayRange[], const double clipRange[], int colorbar, int discrete, bool bkgWhite, int fontSize, bool logColorbar, bool printStats, vtkRenderer* renderer, const char* Title, double alpha) {
 
+  bool clipColorbar = (clipRange[1] != overlayRange[0]);
   double white[3] = {1.0, 1.0, 1.0};
   double black[3] = {0.0, 0.0, 0.0};
 
@@ -169,12 +170,13 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
 
   for (auto i = 0; i < 256; i++) {
     double rgb[4];
-    lookupTable->GetTableValue(i, rgb);
+    lookupTable[0]->GetTableValue(i, rgb);
     lookupTableColorBar->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
   }
 
-  if (clipRange[1] > clipRange[0]) {
-    int start = 0, end = 256;
+  // Clip colorbar
+  int start = 0, end = 256;
+  if ((clipRange[1] > clipRange[0]) && (clipColorbar)) {
     
     if (clipRange[0] > overlayRange[0])
       start = round(256*(clipRange[0] - overlayRange[0])/(overlayRange[1] - overlayRange[0]));
@@ -186,18 +188,49 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
       lookupTableColorBar->SetTableValue(i, 0.5, 0.5, 0.5, alpha);
   }
 
+  if (colorbar && (discrete > 0)) {    
+    if ((overlayRange[1] - overlayRange[0]) != round(overlayRange[1] - overlayRange[0])) {
+      discrete = 0;
+      cout << "For discrete colorbar the difference of the range values has to be an integer (e.g. 0.5..1.5)." << endl;
+    }
+  }
+
   // Use discrete colorbar with gaps
-  if (colorbar == 2) {
-    int steps = 8;
-    for (auto i = 0; i < 256; i++) {        
+  if (discrete > 0) {
+    double rgb[4];
+    int steps = discrete;
+    for (auto i = 0; i < 256; i++) {
+      
+      // Get color for whole block and draw gaps
       if (!(i % steps)) {
+        lookupTableColorBar->GetTableValue(i, rgb);
         if (bkgWhite) lookupTableColorBar->SetTableValue(i, 1.0, 1.0, 1.0, 0);
         else lookupTableColorBar->SetTableValue(i, 0.0, 0.0, 0.0, 0);
+      } else {
+        // If clipping is defined we have to fill the gray values
+        if ((clipRange[1] > clipRange[0]) && (!clipColorbar))
+          lookupTableColorBar->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
+        else if ((clipRange[1] > clipRange[0]) && ((i < start) || (i > end)))
+          lookupTableColorBar->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
+        else lookupTableColorBar->SetTableValue(i, 0.5, 0.5, 0.5, alpha);
+      }
+
+      // Limit colors for overlay
+      if (!(i % steps)) {
+        lookupTable[0]->GetTableValue(i, rgb);
+      } else {
+        lookupTable[0]->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
+        lookupTable[1]->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha);
       }
     }
   }
 
-  lookupTableColorBar->SetTableRange( overlayRange );
+  double range[2] = {clipRange[1],overlayRange[1]};
+  if (!clipColorbar)
+    lookupTableColorBar->SetTableRange( range );
+  else
+    lookupTableColorBar->SetTableRange( overlayRange );
+    
   lookupTableColorBar->SetAlphaRange( alpha, alpha );
 
   vtkSmartPointer<vtkTextProperty> textProperty = vtkSmartPointer<vtkTextProperty>::New();
@@ -263,7 +296,7 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
   if (printStats) scalarBar->SetTitle(info);
   else scalarBar->SetTitle(Title);
   
-  renderer->AddActor2D(scalarBar);
+  if (colorbar) renderer->AddActor2D(scalarBar);
 
 }
 
@@ -271,40 +304,30 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
 void fillLookupTable(vtkLookupTableWithEnabling* lookupTable, vtkColorTransferFunction* colorTransferFunction, double alpha) {
 
   for (int i = 0; i < 256; i++) {
-      double* rgb;
-      double value = (static_cast<double>(i) / 255.0) * 100.0;
-      rgb = colorTransferFunction->GetColor(value);
-      lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
+    double* rgb;
+    double value = (static_cast<double>(i) / 255.0) * 100.0;
+    rgb = colorTransferFunction->GetColor(value);
+    lookupTable->SetTableValue(i, rgb[0], rgb[1], rgb[2], alpha); // Set RGBA, with full opacity
   }
 }
 
 // Obtain LookUpTable for defined colormap
-vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha, double overlayRange[], double clipRange[], int clipFullColors)
+vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha, double overlayRange[], double clipRange[])
 {
-  double c1, c2;
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkColorTransferFunction> colorTransferFunction = vtkSmartPointer<vtkColorTransferFunction>::New();
-
-  if (clipFullColors) {
-    c1 = 100.0*(clipRange[0] - overlayRange[0])/(overlayRange[1] - overlayRange[0]);
-    c2 = 100.0*(clipRange[1] - overlayRange[0])/(overlayRange[1] - overlayRange[0]);
-  } else {
-    c1 = c2 = 50.0;
-  }
   
   switch(colormap) {
   case C1:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0,  50/255.0,136/255.0,189/255.0);
-    colorTransferFunction->AddRGBPoint(c1*1/4, 102/255.0,194/255.0,165/255.0);
-    colorTransferFunction->AddRGBPoint(c1*2/4, 171/255.0,221/255.0,164/255.0);
-    colorTransferFunction->AddRGBPoint(c1*3/4, 230/255.0,245/255.0,152/255.0);
-    colorTransferFunction->AddRGBPoint(c1, 255/255.0,255/255.0,191/255.0);
-    
-    colorTransferFunction->AddRGBPoint(c2, 255/255.0,255/255.0,191/255.0);
-    colorTransferFunction->AddRGBPoint(c2*5/4, 254/255.0,224/255.0,139/255.0);
-    colorTransferFunction->AddRGBPoint(c2*6/4, 253/255.0,174/255.0,97/255.0); 
-    colorTransferFunction->AddRGBPoint(c2*7/4, 244/255.0,109/255.0,67/255.0); 
+    colorTransferFunction->AddRGBPoint(12.5, 102/255.0,194/255.0,165/255.0);
+    colorTransferFunction->AddRGBPoint(25, 171/255.0,221/255.0,164/255.0);
+    colorTransferFunction->AddRGBPoint(37.5, 230/255.0,245/255.0,152/255.0);
+    colorTransferFunction->AddRGBPoint(50, 255/255.0,255/255.0,191/255.0);
+    colorTransferFunction->AddRGBPoint(62.5, 254/255.0,224/255.0,139/255.0);
+    colorTransferFunction->AddRGBPoint(75, 253/255.0,174/255.0,97/255.0); 
+    colorTransferFunction->AddRGBPoint(82.5, 244/255.0,109/255.0,67/255.0); 
     colorTransferFunction->AddRGBPoint(100.0,213/255.0,62/255.0,79/255.0); 
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -312,10 +335,9 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double 
   case C2:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.6, 1.0); 
-    colorTransferFunction->AddRGBPoint(c1*1/2, 0.5, 1.0, 0.5); 
-    colorTransferFunction->AddRGBPoint(c1, 1.0, 1.0, 0.5); 
-    colorTransferFunction->AddRGBPoint(c2, 1.0, 1.0, 0.5); 
-    colorTransferFunction->AddRGBPoint(c2*3/2, 1.0, 0.75, 0.5); 
+    colorTransferFunction->AddRGBPoint(25, 0.5, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(50, 1.0, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(75, 1.0, 0.75, 0.5); 
     colorTransferFunction->AddRGBPoint(100.0, 1.0, 0.5, 0.5);
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -323,10 +345,9 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double 
   case C3:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0,  0/255.0,143/255.0,213/255.0); 
-    colorTransferFunction->AddRGBPoint(c1*1/2, 111/255.0,190/255.0,70/255.0); 
-    colorTransferFunction->AddRGBPoint(c1, 255/255.0,220/255.0,45/255.0); 
-    colorTransferFunction->AddRGBPoint(c2, 255/255.0,220/255.0,45/255.0); 
-    colorTransferFunction->AddRGBPoint(c2*3/2, 252/255.0,171/255.0,23/255.0); 
+    colorTransferFunction->AddRGBPoint(25, 111/255.0,190/255.0,70/255.0); 
+    colorTransferFunction->AddRGBPoint(50, 255/255.0,220/255.0,45/255.0); 
+    colorTransferFunction->AddRGBPoint(75, 252/255.0,171/255.0,23/255.0); 
     colorTransferFunction->AddRGBPoint(100.0,238/255.0,28/255.0,58/255.0);
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -334,12 +355,11 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double 
   case JET:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.0, 0.5625); 
-    colorTransferFunction->AddRGBPoint(c1*1/3, 0.0, 0.0, 1.0); 
-    colorTransferFunction->AddRGBPoint(c1*2/3, 0.0, 1.0, 1.0); 
-    colorTransferFunction->AddRGBPoint(c1, 0.5, 1.0, 0.5); 
-    colorTransferFunction->AddRGBPoint(c2, 0.5, 1.0, 0.5); 
-    colorTransferFunction->AddRGBPoint(c2*4/3, 1.0, 1.0, 0.0);
-    colorTransferFunction->AddRGBPoint(c2*5/3, 1.0, 0.0, 0.0);
+    colorTransferFunction->AddRGBPoint(16.67, 0.0, 0.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(33.33, 0.0, 1.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(50, 0.5, 1.0, 0.5); 
+    colorTransferFunction->AddRGBPoint(66.67, 1.0, 1.0, 0.0);
+    colorTransferFunction->AddRGBPoint(83.33, 1.0, 0.0, 0.0);
     colorTransferFunction->AddRGBPoint(100.0, 0.5, 0.0, 0.0);
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -347,10 +367,9 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double 
   case FIRE:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0, 0.0, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c1*1/2, 0.5, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c1, 1.0, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c2, 1.0, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c2*3/2, 1.0, 0.5, 0.0); 
+    colorTransferFunction->AddRGBPoint(25, 0.5, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(50, 1.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(75, 1.0, 0.5, 0.0); 
     colorTransferFunction->AddRGBPoint(100.0, 1.0, 1.0, 0.0);
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -358,12 +377,11 @@ vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double 
   case BIPOLAR:
     // Add RGB points to the function
     colorTransferFunction->AddRGBPoint(0.0, 0.0, 1.0, 1.0); 
-    colorTransferFunction->AddRGBPoint(c1*1/2, 0.0, 0.0, 1.0); 
-    colorTransferFunction->AddRGBPoint(c1, 0.1, 0.1, 0.1); 
-    colorTransferFunction->AddRGBPoint(c2, 0.1, 0.1, 0.1); 
-    colorTransferFunction->AddRGBPoint(c2*5/4, 0.5, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c2*6/4, 1.0, 0.0, 0.0); 
-    colorTransferFunction->AddRGBPoint(c2*7/4, 1.0, 0.5, 0.0); 
+    colorTransferFunction->AddRGBPoint(25, 0.0, 0.0, 1.0); 
+    colorTransferFunction->AddRGBPoint(50, 0.1, 0.1, 0.1); 
+    colorTransferFunction->AddRGBPoint(62.5, 0.5, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(75, 1.0, 0.0, 0.0); 
+    colorTransferFunction->AddRGBPoint(87.5, 1.0, 0.5, 0.0); 
     colorTransferFunction->AddRGBPoint(100.0, 1.0, 1.0, 0.0);
 
     fillLookupTable(lookupTable,colorTransferFunction,alpha);
@@ -408,11 +426,6 @@ void usage(const char* const prog)
   << "     Clip scalar values. These values will be not displayed." << endl
   << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
   << endl
-  << "  -clip2 lower upper  " << endl
-  << "  -cl2 lower upper  " << endl
-  << "     Clip scalar values. These values will be not displayed, but here the full range of the colors is shown and not clipped." << endl
-  << "     Default value: " << defaultClipRange[0] << " " << defaultClipRange[1] << endl
-  << endl
   << "  -bkg scalarInputBkg  " << endl
   << "     File with scalar values for background surface (gifit, ascii or Freesurfer format), either for the left or merged hemispheres." << endl
   << endl
@@ -425,9 +438,14 @@ void usage(const char* const prog)
   << "  -cb  " << endl
   << "     Show colorbar (default no)." << endl
   << endl
-  << "  -colorbar2  " << endl
-  << "  -cb2  " << endl
-  << "     Show discrete colorbar with gaps (default no)." << endl
+  << "  -discrete value " << endl
+  << "  -dsc  " << endl
+  << "     Limit colors in colormap and show colorbar with gaps (default 0). Use values between 1 and 4." << endl
+  << "       0 - 256 colors." << endl
+  << "       1 - 32 colors." << endl
+  << "       2 - 16 colors." << endl
+  << "       3 - 8 colors." << endl
+  << "       4 - 4 colors." << endl
   << endl
   << "  -title  " << endl
   << "     Set name for colorbar (default scalar-file)." << endl

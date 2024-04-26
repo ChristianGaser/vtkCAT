@@ -27,6 +27,7 @@ static double defaultAlpha = 0.8;
 static double defaultClipRange[2] = { 0.0, -1.0 };
 static double defaultRotate[3] = { 270.0, 0.0, -90.0 };
 static int defaultColorbar = 0;
+static int defaultDiscrete = 0;
 static int defaultInverse = 0;
 static int defaultBkg = 0;
 static int defaultWindowSize[2] = { 1800, 1000 };
@@ -40,10 +41,10 @@ int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> p
     const string& rhSurfName, bool inverse, double clipRange[], fs::path currentPath, 
     double overlayRange[]);
 void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArray> scalars[], 
-    vtkLookupTable* lookupTable, vtkLookupTable* lookupTableColorBar, const double overlayRange[], 
-    const double clipRange[], int colorbar, bool bkgWhite, int fontSize, bool logColorbar, 
+    vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable[], vtkLookupTableWithEnabling* lookupTableColorBar, const double overlayRange[], 
+    const double clipRange[], int colorbar, int discrete, bool bkgWhite, int fontSize, bool logColorbar, 
     bool printStats, vtkRenderer* renderer, const char* Title, double alpha);
 vtkSmartPointer<vtkLookupTableWithEnabling> getLookupTable(int colormap, double alpha, 
-    double overlayRange[], double clipRange[], int clip2);
+    double overlayRange[], double clipRange[]);
 
 #endif // vtkUtils_h
