@@ -12,6 +12,7 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleImage.h>
 #include <vtkCamera.h> 
+#include <vtkImagePermute.h>
 
 #include <vtkImageSliceMapper.h>
 
@@ -32,16 +33,24 @@ int main(int argc, char *argv[]) {
     vtkSmartPointer<vtkRenderer> axialRenderer = vtkSmartPointer<vtkRenderer>::New();
     vtkSmartPointer<vtkRenderer> coronalRenderer = vtkSmartPointer<vtkRenderer>::New();
     vtkSmartPointer<vtkRenderer> sagittalRenderer = vtkSmartPointer<vtkRenderer>::New();
+    vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
     
     vtkSmartPointer<vtkTransform> transforms[3];
     transforms[0] = vtkSmartPointer<vtkTransform>::New();
     transforms[0]->Identity();  // Axial
 
     transforms[1] = vtkSmartPointer<vtkTransform>::New();
-    transforms[1]->RotateX(90);  // Coronal
+    transforms[1] ->Translate(reader->GetOutput()->GetExtent()[1]*0.5, reader->GetOutput()->GetExtent()[3]*0.5, 0);
+    transforms[1] ->RotateY(90);
+    transforms[1] ->RotateX(-90);
+    transforms[1] ->Translate(-reader->GetOutput()->GetExtent()[3]*0.5, -reader->GetOutput()->GetExtent()[1]*0.5, 0);
+
 
     transforms[2] = vtkSmartPointer<vtkTransform>::New();
-    transforms[2]->RotateY(90);  // Sagittal
+    transforms[2] ->Translate(reader->GetOutput()->GetExtent()[1]*0.5, reader->GetOutput()->GetExtent()[3]*0.5, 0);
+    transforms[2] ->RotateX(90);
+    transforms[2] ->RotateY(180);
+    transforms[2] ->Translate(-reader->GetOutput()->GetExtent()[3]*0.5, -reader->GetOutput()->GetExtent()[1]*0.5, 0);
 
     vtkSmartPointer<vtkLookupTable> lut = vtkSmartPointer<vtkLookupTable>::New();
     lut->SetHueRange(0.0, 0.0); 
@@ -50,86 +59,68 @@ int main(int argc, char *argv[]) {
     lut->SetSaturationRange(0.0, 0.0);
     lut->Build();
 
-if (0) {
-    for (int i = 0; i < 3; i++) {
-        vtkSmartPointer<vtkImageReslice> reslice = vtkSmartPointer<vtkImageReslice>::New();
-        reslice->SetInputConnection(reader->GetOutputPort());
-        reslice->SetOutputDimensionality(3);
-        reslice->SetResliceAxes(transforms[i]->GetMatrix());
-
-    vtkSmartPointer<vtkImageSliceMapper> imageSliceMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
-    imageSliceMapper->SetInputConnection(reslice->GetOutputPort());
-//    imageSliceMapper->SetSliceNumber(reslice->GetOutput()->GetExtent()[10]); // Middle slice in the Z-direction
-    imageSliceMapper->SetSliceNumber(50); // Middle slice in the Z-direction
-
-    vtkSmartPointer<vtkImageActor> imageActor = vtkSmartPointer<vtkImageActor>::New();
-    imageActor->SetMapper(imageSliceMapper);
-//    renderer->AddActor(imageActor);
-/*
-        vtkSmartPointer<vtkImageActor> actor = vtkSmartPointer<vtkImageActor>::New();
-        vtkSmartPointer<vtkImageMapToColors> colorMap = vtkSmartPointer<vtkImageMapToColors>::New();
-        colorMap->SetLookupTable(lut);
-        colorMap->SetInputConnection(reslice->GetOutputPort());
-        actor->SetInputData(colorMap->GetOutput());
-        renderer->AddActor(actor);
-*/
-
-//    renderer->SetBackground(0.5, 0.5, 0.5); // Dark grey background
-//    renderer->ResetCamera();
-
-    }
-} else {
-
     // Setup for Axial
     vtkSmartPointer<vtkImageSliceMapper> axialMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
     axialMapper->SetInputConnection(reader->GetOutputPort());
-    axialMapper->SetSliceNumber(30);
+    axialMapper->SetSliceNumber(50);
     vtkSmartPointer<vtkImageActor> axialActor = vtkSmartPointer<vtkImageActor>::New();
     axialActor->SetMapper(axialMapper);
     
-    axialRenderer->AddActor(axialActor);
+    axialActor->SetUserTransform(transforms[0]);
     axialRenderer->SetViewport(0.0, 0.0, 0.33, 1.0);
     axialRenderer->ResetCamera();  // Auto adjust the camera based on the actor
+    axialRenderer->AddActor(axialActor);
+
+    // Create a permute filter
+    vtkSmartPointer<vtkImagePermute> permuteCoronal = vtkSmartPointer<vtkImagePermute>::New();
+    permuteCoronal->SetInputConnection(reader->GetOutputPort());
+    permuteCoronal->SetFilteredAxes(2, 1, 0); // New order of axes: Z, Y, X
+    permuteCoronal->Update();
 
     // Setup for Coronal
     vtkSmartPointer<vtkImageSliceMapper> coronalMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
+
     coronalMapper->SetInputConnection(reader->GetOutputPort());
     coronalMapper->SetOrientationToX();
-    coronalMapper->SetSliceNumber(40);
+    coronalMapper->SetSliceNumber(50);
     vtkSmartPointer<vtkImageActor> coronalActor = vtkSmartPointer<vtkImageActor>::New();
     coronalActor->SetMapper(coronalMapper);
     
-    coronalRenderer->AddActor(coronalActor);
+    coronalActor->SetUserTransform(transforms[1]);
     coronalRenderer->SetViewport(0.33, 0.0, 0.66, 1.0);
-    vtkCamera* coronalCamera = coronalRenderer->GetActiveCamera();
-    coronalCamera->Yaw(-90);  // Rotate 90 degrees around the vertical axis
-
+    coronalRenderer->ResetCamera();  // Auto adjust the camera based on the actor
+    coronalRenderer->AddActor(coronalActor);
+    
     // Setup for Sagittal
+    vtkSmartPointer<vtkImagePermute> permuteSagiital = vtkSmartPointer<vtkImagePermute>::New();
+    permuteSagiital->SetInputConnection(reader->GetOutputPort());
+    permuteSagiital->SetFilteredAxes(1, 0, 2); 
+    permuteSagiital->Update();
+
     vtkSmartPointer<vtkImageSliceMapper> sagittalMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
     sagittalMapper->SetInputConnection(reader->GetOutputPort());
     sagittalMapper->SetOrientationToY();
-    sagittalMapper->SetSliceNumber(50);
+    sagittalMapper->SetSliceNumber(80);
     vtkSmartPointer<vtkImageActor> sagittalActor = vtkSmartPointer<vtkImageActor>::New();
     sagittalActor->SetMapper(sagittalMapper);
-    sagittalRenderer->SetViewport(0.66, 0.0, 1.0, 1.0);
-    vtkCamera* sagittalCamera = sagittalRenderer->GetActiveCamera();
-    sagittalCamera->Elevation(-90);  // Rotate 90 degrees around the vertical axis
     
+    sagittalActor->SetUserTransform(transforms[2]);
+    sagittalRenderer->SetViewport(0.66, 0.0, 1.0, 1.0);
+    sagittalRenderer->ResetCamera();  // Auto adjust the camera based on the actor
     sagittalRenderer->AddActor(sagittalActor);
-}
-
-
-    vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+    
     renderWindow->AddRenderer(axialRenderer);
     renderWindow->AddRenderer(coronalRenderer);
     renderWindow->AddRenderer(sagittalRenderer);
 
     vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    vtkSmartPointer<vtkInteractorStyleImage> style = vtkSmartPointer<vtkInteractorStyleImage>::New();
+    renderWindowInteractor->SetInteractorStyle(style);
+
     renderWindowInteractor->SetRenderWindow(renderWindow);
 
     renderWindow->SetSize(1800, 1000);
     renderWindow->Render();
-    renderWindowInteractor->Initialize();
     renderWindowInteractor->Start();
 
     return EXIT_SUCCESS;
