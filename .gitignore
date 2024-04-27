@@ -3,6 +3,7 @@ CMakeFiles
 examples
 Makefile
 *.a
+*.o
 cmake_install.cmake
 CAT_ViewSurf 
 CAT_Viewimage
