@@ -111,7 +111,7 @@ int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> p
     fs::current_path(currentPath);
   }
   
-  if(inverse) {
+  if (inverse) {
     for (auto i = 0; i < nMeshes; i++) {
       for (auto k = 0; k < polyData[i]->GetNumberOfPoints(); k++)
         scalars[i]->SetValue(k,-(scalars[i]->GetValue(k)));
@@ -165,6 +165,7 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
 
   for (auto i=0; i < n1; i++)
     scalarLR->SetValue(i,scalars[0]->GetValue(i));
+
   for (auto i=0; i < n2; i++)
     scalarLR->SetValue(i+n2,scalars[1]->GetValue(i));
 
