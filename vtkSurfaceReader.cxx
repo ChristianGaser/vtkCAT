@@ -261,9 +261,8 @@ vtkSmartPointer<vtkPolyData> ConvertGIFTIToVTK(gifti_image* image)
     
     int vertex_index;
     for (vertex_index = 0; vertex_index < num_vertices; vertex_index++) {
-      for (int j=0; j<3; ++j) {
+      for (int j=0; j<3; ++j)
         xyz[j] = (float) gifti_get_DA_value_2D (coords, vertex_index, j);
-      }
           points->InsertNextPoint(xyz);
     }
 

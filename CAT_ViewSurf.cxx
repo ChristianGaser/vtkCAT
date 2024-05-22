@@ -56,6 +56,7 @@ int main(int argc, char* argv[])
   int discrete = defaultDiscrete;
   int bkgWhite = defaultBkg;
   int printStats = 0;
+  int shiftCoordinates = 1;
   int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
@@ -148,28 +149,26 @@ int main(int argc, char* argv[])
 
   const int numArgs = argc - indx;
 
-  vtkSmartPointer<vtkPolyData> polyData[2];
-  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable[2];
-  lookupTable[0] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
-  lookupTable[1] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+  int maxMeshes = 2;
+  vtkSmartPointer<vtkPolyData> polyData[maxMeshes];
+  vtkSmartPointer<vtkLookupTableWithEnabling> lookupTable[maxMeshes];
+  vtkSmartPointer<vtkDoubleArray> scalarsBkg[maxMeshes];
+  vtkSmartPointer<vtkDoubleArray> scalars[maxMeshes];
+  vtkSmartPointer<vtkCurvatures> curvature[maxMeshes];
+  vtkSmartPointer<vtkPolyData> curvaturesMesh[maxMeshes];
+  vtkSmartPointer<vtkPolyDataMapper> mapper[maxMeshes];
+  vtkSmartPointer<vtkPolyDataMapper> mapperBkg[maxMeshes];
+
+  for (auto i = 0; i < maxMeshes; i++) {
+    lookupTable[i] = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
+    scalarsBkg[i]  = vtkSmartPointer<vtkDoubleArray>::New();
+    scalars[i]     = vtkSmartPointer<vtkDoubleArray>::New();
+    curvature[i]   = vtkSmartPointer<vtkCurvatures>::New();
+  }
+
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableBkg = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
   vtkSmartPointer<vtkLookupTableWithEnabling> lookupTableColorBar = vtkSmartPointer<vtkLookupTableWithEnabling>::New();
 
-  vtkSmartPointer<vtkDoubleArray> scalarsBkg[2];
-  scalarsBkg[0] = vtkSmartPointer<vtkDoubleArray>::New();
-  scalarsBkg[1] = vtkSmartPointer<vtkDoubleArray>::New();
-
-  vtkSmartPointer<vtkDoubleArray> scalars[2];
-  scalars[0] = vtkSmartPointer<vtkDoubleArray>::New();
-  scalars[1] = vtkSmartPointer<vtkDoubleArray>::New();
-
-  vtkSmartPointer<vtkCurvatures> curvature[2];
-  curvature[0] = vtkSmartPointer<vtkCurvatures>::New();
-  curvature[1] = vtkSmartPointer<vtkCurvatures>::New();
-
-  vtkSmartPointer<vtkPolyData> curvaturesMesh[2];
-  vtkSmartPointer<vtkPolyDataMapper> mapper[2];
-  vtkSmartPointer<vtkPolyDataMapper> mapperBkg[2];
   
   // Check that file exists
   if (!vtksys::SystemTools::FileExists(argv[indx])) {
@@ -221,6 +220,31 @@ int main(int argc, char* argv[])
     }
   }
   
+  // Shift left y-coordinate to a start value of -100 to correct potential shifts
+  // if origin is not defined
+  if (shiftCoordinates) {
+    double bounds[6];
+    double yShift;
+    polyData[0]->GetBounds(bounds);
+    yShift = -100.0 - bounds[2];
+    
+    for (auto i = 0; i < maxMeshes; i++) {
+      vtkSmartPointer<vtkPoints> points = polyData[i]->GetPoints();
+  
+      // Loop through all points and modify the y-coordinate
+      for (auto j = 0; j < points->GetNumberOfPoints(); ++j)
+      {
+          double p[3];
+          points->GetPoint(j, p);
+          p[1] += yShift; // Modify the y-coordinate
+          points->SetPoint(j, p);
+      }
+  
+      // Update the points in the vtkPolyData
+      polyData[i]->SetPoints(points);
+    }
+  }
+                
   for (auto i = 0; i < nMeshes; i++) {
   
     curvature[i]->SetInputData(polyData[i]);
