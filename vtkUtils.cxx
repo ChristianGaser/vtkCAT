@@ -163,11 +163,11 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
   int nValuesLR = n1 + n2;
   scalarLR->SetNumberOfTuples(nValuesLR);
 
-  for (auto i=0; i < n1; i++)
+  for (auto i = 0; i < n1; i++)
     scalarLR->SetValue(i,scalars[0]->GetValue(i));
 
-  for (auto i=0; i < n2; i++)
-    scalarLR->SetValue(i+n2,scalars[1]->GetValue(i));
+  for (auto i = 0; i < n2; i++)
+    scalarLR->SetValue(i+n1,scalars[1]->GetValue(i));
 
   for (auto i = 0; i < 256; i++) {
     double rgb[4];
