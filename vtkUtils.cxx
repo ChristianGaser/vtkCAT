@@ -268,7 +268,6 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
       } else snprintf(buffer.data(), buffer.size(), "%g", value);  
 
       scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());
-      scalarBar->GetLookupTable()->SetAnnotation(value, buffer.data());
     }
   } else if (fontSize) {
     scalarBar->SetNumberOfLabels(0); // Suppress labels

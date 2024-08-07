@@ -40,7 +40,7 @@ SET(zlib_LIBS
   zlib
 )
 
-find_package(VTK COMPONENTS 
+find_package(VTK REQUIRED COMPONENTS
   InteractionStyle
   RenderingAnnotation
   RenderingContextOpenGL2
@@ -68,6 +68,7 @@ vtk_module_autoinit(
 
 # If you have include directories for your application, specify them
 target_include_directories(CAT_ViewSurf PRIVATE ${VTK_INCLUDE_DIRS} gifticlib zlib)
+target_include_directories(CAT_ViewImage PRIVATE ${VTK_INCLUDE_DIRS} gifticlib zlib)
 
 TARGET_LINK_LIBRARIES(CAT_ViewSurf PRIVATE ${VTK_LIBRARIES} gifticlib expat zlib)
-TARGET_LINK_LIBRARIES(CAT_ViewImage PRIVATE ${VTK_LIBRARIES} gifticlib expat)
+TARGET_LINK_LIBRARIES(CAT_ViewImage PRIVATE ${VTK_LIBRARIES} gifticlib expat zlib)

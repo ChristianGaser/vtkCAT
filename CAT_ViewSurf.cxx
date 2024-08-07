@@ -56,11 +56,13 @@ int main(int argc, char* argv[])
   int discrete = defaultDiscrete;
   int bkgWhite = defaultBkg;
   int printStats = 0;
+  int debug = 0;
   int shiftCoordinates = 1;
   int overlay = 0, overlayBkg = 0, saveImage = 0, title = 0;
   int WindowSize[2] = {defaultWindowSize[0], defaultWindowSize[1]};
   int indx = -1, nMeshes;
-  bool rhExists;
+  int n1, n2;
+  bool lhExists, rhExists;
 
   for (auto j = 1; j < argc; j++) {
     if (argv[j][0] != '-') {
@@ -128,6 +130,9 @@ int main(int argc, char* argv[])
      colormap = C2;
     else if (!strcmp(argv[j], "-c3")) 
      colormap = C3;
+    else if (!strcmp(argv[j], "-debug")) {
+      debug = 1;
+    }
     else {
       cout << endl;
       cout << "ERROR: Unrecognized argument: " << argv[j] << endl; 
@@ -188,6 +193,7 @@ int main(int argc, char* argv[])
     rhExists = vtksys::SystemTools::FileExists(rhSurfName);
   } else rhExists = false;
   
+  if (debug) cout << "ReadGIFTIMesh LH" << endl;
   try {
     polyData[0] = ReadGIFTIMesh(argv[indx]);
   } catch (const exception& e) {
@@ -196,6 +202,7 @@ int main(int argc, char* argv[])
   }
   
   if (rhExists) {
+    if (debug) cout << "ReadGIFTIMesh RH" << endl;
     try {
       polyData[1] = ReadGIFTIMesh(rhSurfName.c_str());
     } catch (const exception& e) {
@@ -209,6 +216,7 @@ int main(int argc, char* argv[])
 
   // Read background scalars if defined
   if (overlayBkg) {
+    if (debug) cout << "ReadBackgroundScalars" << endl;
     // Check that file exists
     if (!vtksys::SystemTools::FileExists(overlayFileNameBkgL)) {
       cerr << "ERROR: File " << overlayFileNameBkgL << " not found." << endl;
@@ -228,7 +236,8 @@ int main(int argc, char* argv[])
     polyData[0]->GetBounds(bounds);
     yShift = -100.0 - bounds[2];
     
-    for (auto i = 0; i < maxMeshes; i++) {
+    for (auto i = 0; i < nMeshes; i++) {
+      if (debug) cout << "GetPoints " << i << endl;
       vtkSmartPointer<vtkPoints> points = polyData[i]->GetPoints();
   
       // Loop through all points and modify the y-coordinate
@@ -247,6 +256,7 @@ int main(int argc, char* argv[])
                 
   for (auto i = 0; i < nMeshes; i++) {
   
+    if (debug) cout << "Prepare Mesh " << i << endl;
     curvature[i]->SetInputData(polyData[i]);
     curvature[i]->SetCurvatureTypeToMean();
     curvature[i]->Update();
@@ -293,6 +303,7 @@ int main(int argc, char* argv[])
 
   for (auto i = 0; i < actor.size(); ++i)
   {
+    if (debug) cout << "Actor " << i << endl;
     // If only left hemisphere exists, then skip display of right hemipshere
     if ((nMeshes == 1) && (i % 2)) continue;
     
@@ -325,6 +336,7 @@ int main(int argc, char* argv[])
   }
   
   // A renderer and render window
+  if (debug) cout << "Renderer" << endl;
   vtkNew<vtkRenderer> renderer;
 
   vtkNew<vtkRenderWindow> renderWindow;
@@ -346,6 +358,7 @@ int main(int argc, char* argv[])
 
   // Read scalars if defined
   if (overlay) {
+    if (debug) cout << "ReadAndUpdateScalars" << endl;
     if (!vtksys::SystemTools::FileExists(overlayFileNameL)) {
       cerr << "ERROR: File " << overlayFileNameL << " not found." << endl;
       return EXIT_FAILURE;
@@ -377,6 +390,7 @@ int main(int argc, char* argv[])
   // Build colormap
   for (auto i = 0; i < nMeshes; i++) {
 
+    if (debug) cout << "Build Colormap " << i << endl;
     // Get LUT for colormap
     lookupTable[i] = getLookupTable(colormap,alpha,overlayRange,clipRange);
   
@@ -401,15 +415,18 @@ int main(int argc, char* argv[])
   
   for (auto i = 0; i < nMeshes; i++) {
     if (overlay) {
+      if (debug) cout << "Mapper " << i << endl;
       mapper[i]->SetScalarRange( overlayRange );
       mapper[i]->SetLookupTable( lookupTable[i] );
     }
     
+    if (debug) cout << "Background Mapper " << i << endl;
     mapperBkg[i]->SetScalarRange( overlayRangeBkg );
     mapperBkg[i]->SetLookupTable( lookupTableBkg );
   }
   
   // Create interactor
+  if (debug) cout << "Interactor " << endl;
   vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
   renderWindowInteractor->SetRenderWindow(renderWindow);
 
@@ -420,8 +437,9 @@ int main(int argc, char* argv[])
   
   // Create the scalarBar
   if (overlay) {
-    int n1 = polyData[0]->GetNumberOfPoints();
-    int n2 = polyData[1]->GetNumberOfPoints();
+    if (debug) cout << "UpdateScalarBarAndLookupTable" << endl;
+    n1 = polyData[0]->GetNumberOfPoints();
+    if (rhExists) n2 = polyData[1]->GetNumberOfPoints(); else n2 = 0; 
     UpdateScalarBarAndLookupTable(n1, n2, scalars, lookupTable, lookupTableColorBar, overlayRange, clipRange, colorbar, discrete, bkgWhite, fontSize, logColorbar, printStats, renderer, Title, alpha);
   }
 
