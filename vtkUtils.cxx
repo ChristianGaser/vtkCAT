@@ -73,6 +73,7 @@ int ReadAndUpdateScalars(string overlayFileNameL, vtkSmartPointer<vtkPolyData> p
   string baseNameL = vtksys::SystemTools::GetFilenameName(overlayFileNameL);
   
   // Change current path
+  if (directoryPath.empty()) directoryPath = "./";
   fs::current_path(directoryPath);
   
   cout << "Read overlays: " << overlayFileNameL << endl;
@@ -292,9 +293,10 @@ void UpdateScalarBarAndLookupTable(int n1, int n2, vtkSmartPointer<vtkDoubleArra
   scalarBar->GetTitleTextProperty()->BoldOn();
 
   char info[150];
-  snprintf(info, sizeof(info), "Mean=%.3f Median=%.3f SD=%.3f", get_mean(scalarLR), get_median(scalarLR), get_std(scalarLR));
-  if (printStats) scalarBar->SetTitle(info);
-  else scalarBar->SetTitle(Title);
+  if (printStats) {
+    snprintf(info, sizeof(info), "Mean=%.3f Median=%.3f SD=%.3f", get_mean(scalarLR), get_median(scalarLR), get_std(scalarLR));
+    scalarBar->SetTitle(info);
+  } else scalarBar->SetTitle(Title);
   
   if (colorbar) renderer->AddActor2D(scalarBar);
 
